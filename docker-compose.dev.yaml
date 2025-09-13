@@ -1,0 +1,66 @@
+services:
+
+  splitmate-database:
+    image: mongo:6.0
+    container_name: splitmate-database
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_DATABASE}
+    command: mongod --auth
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init/init-mongo.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
+
+    networks:
+      - network
+      
+  splitmate-backend:
+    build:
+      context: ./splitmate-backend
+      dockerfile: Dockerfile.dev
+    image: saisriharsha2005/splitmate-backend
+    container_name: splitmate-backend
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./splitmate-backend:/splitmate-backend
+      - /splitmate-backend/node_modules  
+    networks:
+      - network
+    ports:
+      - "8081:8080"
+    depends_on:
+      - splitmate-database
+
+  splitmate-frontend:
+    build:
+      context: ./splitmate-frontend
+      dockerfile: Dockerfile.dev
+    image: saisriharsha2005/splitmate-frontend
+    container_name: splitmate-frontend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./splitmate-frontend:/splitmate-frontend
+      - /splitmate-frontend/node_modules  
+    networks:
+      - network
+    ports:
+      - "3000:5173"
+    depends_on:
+      - splitmate-backend
+
+networks:
+  network:
+    driver: bridge
+
+volumes:
+  mongo_data:
