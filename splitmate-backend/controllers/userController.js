@@ -16,11 +16,11 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
 const MONGODB_URL = process.env.MONGODB_URL;
 
-export const signup = async (req, res) => {
-  const { name, email, mobile, uname, password } = req.body;
+export const register = async (req, res) => {
+  const { name, email, mobile, username, password } = req.body;
 
   try {
-    const existingUser = await User.findOne({ uname });
+    const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exist" });
     }
@@ -31,8 +31,9 @@ export const signup = async (req, res) => {
       name,
       email,
       mobile,
-      uname,
+      username: username,
       password: hashedPassword,
+      default_currency: req.body.default_currency || "INR",
     });
 
     await newUser.save();
@@ -43,11 +44,11 @@ export const signup = async (req, res) => {
   }
 };
 
-export const signin = async (req, res) => {
-  const { uname, password } = req.body;
+export const login = async (req, res) => {
+  const { username, password } = req.body;
 
   try {
-    const user = await User.findOne({ uname });
+    const user = await User.findOne({ username });
     if (!user) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
@@ -72,7 +73,7 @@ export const signin = async (req, res) => {
       .json({
         token,
         name: user.name,
-        username: user.uname,
+        username: user.username,
         message: "Login Successfull!!",
       });
   } catch (error) {
@@ -207,9 +208,9 @@ export const resetNotificationCount = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
   try {
-    const { uname } = req.params;
+    const { username } = req.params;
 
-    const user = await User.findOne({ uname });
+    const user = await User.findOne({ username });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -219,7 +220,7 @@ export const getUserProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       mobile: user.mobile,
-      uname: user.uname,
+      username: user.username,
     });
   } catch (error) {
     console.error(error);
@@ -230,11 +231,11 @@ export const getUserProfile = async (req, res) => {
 };
 
 export const updateUserProfile = async (req, res) => {
-  const { uname } = req.params;
-  const { name, email, mobile, newUname } = req.body;
+  const { username } = req.params;
+  const { name, email, mobile, newusername } = req.body;
 
   try {
-    const user = await User.findOne({ uname });
+    const user = await User.findOne({ username });
 
     const oname = user.name;
 
@@ -242,8 +243,8 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (newUname) {
-      const existingUser = await User.findOne({ uname: newUname });
+    if (newusername) {
+      const existingUser = await User.findOne({ username: newusername });
       if (existingUser) {
         return res.status(400).json({ message: "Username already taken" });
       }
@@ -252,15 +253,15 @@ export const updateUserProfile = async (req, res) => {
     if (name) user.name = name;
     if (email) user.email = email;
     if (mobile) user.mobile = mobile;
-    if (newUname) user.uname = newUname;
+    if (newusername) user.username = newusername;
 
     const updatedUser = await user.save();
 
     const updatedName = name || user.name;
-    const updatedUsername = newUname || uname;
+    const updatedUsername = newusername || username;
 
     await Note.updateMany(
-      { owner_username: uname },
+      { owner_username: username },
       {
         $set: {
           owner: updatedName,
@@ -295,10 +296,10 @@ export const updateUserProfile = async (req, res) => {
 
 export const updatePassword = async (req, res) => {
   try {
-    const { uname } = req.params;
+    const { username } = req.params;
     const { currentPassword, newPassword } = req.body;
 
-    const user = await User.findOne({ uname });
+    const user = await User.findOne({ username });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });

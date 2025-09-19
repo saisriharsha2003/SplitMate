@@ -1,7 +1,7 @@
 import express from 'express';
 import {
-  signup,
-  signin,
+  register,
+  login,
   getUserProfile,
   updatePassword,
   updateUserProfile,
@@ -18,11 +18,11 @@ router.route('/').get((req, res) => {
   res.send('Welcome to the SplitMate!');
 });
 
-router.post('/register', signup);
-router.post('/login', signin);
-router.get('/profile/:uname', getUserProfile);
-router.put('/update-password/:uname', updatePassword);
-router.put('/update-profile/:uname', updateUserProfile);
+router.post('/register', register);
+router.post('/login', login);
+router.get('/profile/:username', getUserProfile);
+router.put('/update-password/:username', updatePassword);
+router.put('/update-profile/:username', updateUserProfile);
 router.post('/reset-password', resetPassword);
 router.post('/verify-code', verifyCode);
 router.put('/new-password', newPassword);
