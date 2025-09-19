@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./components/LandingPage/LandingPage";
 import Register from "./components/Register/Register";
 import Login from "./components/Login/Login";
+import Home from "./components/Home/Home";
+import Groups from "./components/Groups/Groups";
 import { ToastContainer } from "react-toastify";
 
 import "./index.css";
@@ -15,6 +17,8 @@ const App = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/groups" element={<Groups />} />
       </Routes>
       <ToastContainer />
     </>

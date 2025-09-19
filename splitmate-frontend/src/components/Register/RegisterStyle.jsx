@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import background from "../../assets/images/background.jpg";
+import CreatableSelect from "react-select/creatable";
 
 export const AuthWrapper = styled.div`
   height: 100vh;
@@ -9,8 +10,6 @@ export const AuthWrapper = styled.div`
   justify-content: center;
   align-items: center;
   background: url(${background}) no-repeat center center/cover;
-
-  
 `;
 
 export const AuthContainer = styled.div`
@@ -18,7 +17,7 @@ export const AuthContainer = styled.div`
   width: 900px;
   height: 550px;
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(85px);
+  backdrop-filter: blur(150px);
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
@@ -77,6 +76,17 @@ export const InputGroup = styled.div`
     font-size: 1.1rem;
     margin-right: 10px;
   }
+  .toggle-password {
+    position: absolute;
+    right: 63px;
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: color 0.3s;
+
+    &:hover {
+      color: #00ffff;
+    }
 `;
 
 export const Input = styled.input`
@@ -138,5 +148,67 @@ export const SwitchText = styled.p`
 
   a:hover {
     text-decoration: underline;
+  }
+`;
+export const CurrencySelect = styled(CreatableSelect).attrs({
+  classNamePrefix: "react-select",
+})`
+  flex: 1;
+  .react-select__control {
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    min-height: 45px;
+    font-size: 1rem;
+    color: #fff;
+    box-shadow: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: transparent; 
+    }
+  }
+
+  .react-select__single-value {
+    color: #fff;
+  }
+
+  .react-select__menu {
+    background: grey;
+    border-radius: 12px;
+    margin-top: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    z-index: 1000;
+  }
+
+  .react-select__option {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    color: #e6e6e6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &--is-focused {
+      background: transparent;
+\    }
+
+    &--is-selected {
+      background: #00e6e6;
+      color: #fff;
+    }
+  }
+
+  .react-select__indicator-separator {
+    display: none;
+  }
+
+  .react-select__dropdown-indicator {
+    color: #00e6e6;
+
+    &:hover {
+      color: white;
+    }
   }
 `;
