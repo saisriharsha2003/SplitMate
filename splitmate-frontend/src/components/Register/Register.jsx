@@ -9,6 +9,7 @@ import {
   Input,
   Button,
   SwitchText,
+  CurrencySelect,
 } from "./RegisterStyle";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -17,22 +18,45 @@ import "react-toastify/dist/ReactToastify.css";
 import { BASE_URL } from "../config";
 import registerImage from "../../assets/images/auth_image.jpg";
 import MainNav from "../MainNav/MainNav";
-import { FaEnvelope, FaLock, FaPhone, FaUser, FaUserCircle } from "react-icons/fa";
+import CurrencyDropdown from "../Helper/CurrencyDropdown";
+import {
+  FaEnvelope,
+  FaLock,
+  FaPhone,
+  FaUser,
+  FaUserCircle,
+  FaEye, 
+  FaEyeSlash
+} from "react-icons/fa";
 
 const Register = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     mobile: "",
-    uname: "",
+    username: "",
     password: "",
+    default_currency: "INR",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
+  };
+
+  const currencyOptions = [
+    { label: "INR", value: "INR" },
+    { label: "USD", value: "USD" },
+  ];
+
+  const handleCurrencyChange = (selected) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      default_currency: selected[0]?.value || "INR",
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -111,9 +135,9 @@ const Register = () => {
                 <FaUserCircle className="icon" />
                 <Input
                   type="text"
-                  name="uname"
+                  name="username"
                   placeholder="Username"
-                  value={formData.uname}
+                  value={formData.username}
                   onChange={handleChange}
                   required
                 />
@@ -121,12 +145,34 @@ const Register = () => {
               <InputGroup>
                 <FaLock className="icon" />
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleChange}
                   required
+                />
+                <span
+                  className="toggle-password"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </span>
+              </InputGroup>
+              <InputGroup>
+                <FaLock className="icon" />
+                <CurrencySelect
+                  options={currencyOptions}
+                  onChange={(selected) =>
+                    setFormData({
+                      ...formData,
+                      default_currency: selected.value,
+                    })
+                  }
+                  placeholder="Select Currency"
+                  isClearable={false}
+                  isSearchable={false}
+                  defaultValue={currencyOptions[0]}
                 />
               </InputGroup>
 

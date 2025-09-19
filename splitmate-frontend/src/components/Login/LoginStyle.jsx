@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import background from "../../assets/images/background.jpg";
+import { motion } from "framer-motion";
 
 export const AuthWrapper = styled.div`
   height: 100vh;
@@ -16,7 +17,7 @@ export const AuthContainer = styled.div`
   width: 900px;
   height: 550px;
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(85px);
+  backdrop-filter: blur(150px);
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
@@ -65,15 +66,41 @@ export const Title = styled.h2`
 export const InputGroup = styled.div`
   display: flex;
   align-items: center;
+  position: relative;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   margin: 10px 0;
-  padding: 0 12px;
+  padding: 10px 12px;
 
   .icon {
     color: #00e6e6;
     font-size: 1.1rem;
     margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  input {
+    flex: 1; 
+    border: none;
+    outline: none;
+    background: transparent;
+    color: white;
+    font-size: 1rem;
+    padding: 8px;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 25px;
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    z-index: 2; 
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: #00ffff;
+    }
   }
 `;
 
@@ -138,3 +165,5 @@ export const SwitchText = styled.p`
     text-decoration: underline;
   }
 `;
+
+export const MotionButton = motion(Button);
