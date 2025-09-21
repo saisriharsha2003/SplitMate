@@ -10,7 +10,7 @@ export const LayoutWrapper = styled.div`
 
 export const ContentWrapper = styled.main`
   flex-grow: 1;
-  margin-left: 16rem; /* Adjusted for sidebar width */
+  margin-left: 16rem; 
   padding: 20px;
   background-color: #f8f9fa;
   overflow-y: auto;

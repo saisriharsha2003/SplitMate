@@ -2,6 +2,7 @@ import Nav from "../Nav/Nav";
 import Sidebar from "../Sidebar/Sidebar";
 import { useState } from "react";
 import { LayoutWrapper, ContentWrapper } from "./DashboardStyle";
+import Nav from "../Nav/Nav";
 
 const Dashboard = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);

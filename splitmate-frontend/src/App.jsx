@@ -6,6 +6,9 @@ import Register from "./components/Register/Register";
 import Login from "./components/Login/Login";
 import Home from "./components/Home/Home";
 import Groups from "./components/Groups/Groups";
+import NewGroup from "./components/Groups/NewGroup";
+import ViewGroup from "./components/Groups/ViewGroup";
+import AddExpense from "./components/Expenses/AddExpense";
 import { ToastContainer } from "react-toastify";
 
 import "./index.css";
@@ -19,6 +22,9 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/groups" element={<Groups />} />
+        <Route path="/groups/new" element={<NewGroup />} />
+        <Route path="/groups/:id" element={<ViewGroup />} />
+        <Route path="/groups/:id/expense/new" element={<AddExpense />} />
       </Routes>
       <ToastContainer />
     </>
