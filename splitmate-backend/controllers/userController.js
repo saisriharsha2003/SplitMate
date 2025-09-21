@@ -1,5 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import User from "../models/User.js";
+import Group from "../models/Groups.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -68,14 +69,12 @@ export const login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res
-      .status(StatusCodes.OK)
-      .json({
-        token,
-        name: user.name,
-        username: user.username,
-        message: "Login Successfull!!",
-      });
+    res.status(StatusCodes.OK).json({
+      token,
+      name: user.name,
+      username: user.username,
+      message: "Login Successfull!!",
+    });
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -170,6 +169,160 @@ export const newPassword = async (req, res) => {
     res.json({ message: "Password reset successful" });
   } catch (error) {
     res.status(500).json({ error: "Error resetting password" });
+  }
+};
+
+export const createGroup = async (req, res) => {
+  try {
+    console.log("Request body:", req.body);
+    const { name, currency, createdBy } = req.body;
+
+    if (!name || !createdBy) {
+      return res
+        .status(400)
+        .json({ error: "Group name and username are required" });
+    }
+
+    const user = await User.findOne({ username: createdBy });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const initialMembers = [{ user: user._id, joinedAt: new Date() }];
+
+    const joinCode = crypto.randomBytes(4).toString("hex");
+
+    const group = new Group({
+      name,
+      currency: currency || user.default_currency || "INR",
+      createdBy: user._id,
+      members: initialMembers,
+      joinCode,
+    });
+
+    await group.save();
+    res.status(201).json(group);
+  } catch (error) {
+    console.error("Error creating group:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const getUserGroups = async (req, res) => {
+  try {
+    const groups = await Group.find()
+      .populate("createdBy", "name email username")
+      .populate("members.user", "name email username")
+      .sort({ createdAt: -1 });
+    res.status(200).json(groups);
+  } catch (error) {
+    console.error("❌ Error in getAllGroups:", error.message);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const getGroupById = async (req, res) => {
+  try {
+    console.log("getGroupById called");
+    const { id } = req.params;
+    const username = req.query.username;
+    console.log("Fetching group with ID:", id, "for user:", username);
+
+    if (!username) {
+      return res.status(400).json({ error: "Username is required" });
+    }
+
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const group = await Group.findById(id)
+      .populate("createdBy", "name username email")
+      .populate("members.user", "name username email")
+      .populate("expenses.paidBy", "name username email")
+      .populate("expenses.splitAmong", "name username email");
+
+    if (!group) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    let youOwe = 0;
+    let owedToYou = 0;
+
+    group.expenses.forEach((exp) => {
+      const paidBy = exp.paidBy?._id?.toString();
+      const currentUser = user._id.toString();
+      const splitCount = exp.splitAmong.length || 1;
+      const share = exp.amount / splitCount;
+
+      if (exp.splitAmong.some((u) => u._id.toString() === currentUser)) {
+        if (paidBy !== currentUser) {
+          youOwe += share;
+        } else {
+          owedToYou += exp.amount - share;
+        }
+      }
+    });
+
+    const result = {
+      _id: group._id,
+      name: group.name,
+      createdBy: group.createdBy,
+      members: group.members,
+      expenses: group.expenses,
+      summary: {
+        youOwe,
+        owedToYou,
+      },
+    };
+
+    res.json(result);
+  } catch (err) {
+    console.error("❌ Error in getGroupById:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const joinGroup = async (req, res) => {
+  try {
+    const { username, joinCode } = req.body;
+
+    if (!username || !joinCode) {
+      return res
+        .status(400)
+        .json({ error: "Username and joinCode are required" });
+    }
+
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const group = await Group.findOne({ joinCode });
+    if (!group) {
+      return res.status(404).json({ error: "Invalid invite code" });
+    }
+
+    const isMember = group.members.some(
+      (m) => m.user.toString() === user._id.toString()
+    );
+    if (isMember) {
+      return res
+        .status(400)
+        .json({ error: "You are already a member of this group" });
+    }
+
+    group.members.push({
+      user: user._id,
+      joinedAt: new Date(),
+      role: "member",
+    });
+
+    await group.save();
+
+    res.status(200).json({ message: "Successfully joined the group", group });
+  } catch (err) {
+    console.error("❌ Error in joinGroup:", err.message);
+    res.status(500).json({ error: "Server error" });
   }
 };
 

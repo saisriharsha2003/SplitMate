@@ -9,7 +9,11 @@ import {
   verifyCode,
   newPassword,
   getNotifications,
-  resetNotificationCount
+  resetNotificationCount,
+  createGroup,
+  getUserGroups,
+  getGroupById,
+  joinGroup,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -26,6 +30,11 @@ router.put('/update-profile/:username', updateUserProfile);
 router.post('/reset-password', resetPassword);
 router.post('/verify-code', verifyCode);
 router.put('/new-password', newPassword);
+router.post('/groups/new', createGroup);
+router.get('/groups', getUserGroups);
+router.get("/groups/:id", getGroupById);
+router.post("/groups/join", joinGroup);
+
 
 router.get('/notifications/:username', getNotifications);
 router.post('/notifications/reset/:username', resetNotificationCount);

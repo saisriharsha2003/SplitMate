@@ -27,6 +27,8 @@ services:
     image: saisriharsha2005/splitmate-backend
     container_name: splitmate-backend
     restart: unless-stopped
+    environment:
+      - CHOKIDAR_USEPOLLING=true
     env_file: .env
     volumes:
       - ./splitmate-backend:/splitmate-backend
