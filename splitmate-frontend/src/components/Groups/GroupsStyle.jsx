@@ -6,10 +6,10 @@ export const Wrapper = styled.div`
 
 export const Content = styled.div`
   flex: 1;
-  margin-left: 18%; /* Sidebar width */
   padding: 20px;
-  background: #f8f9fa;
+  background: #00000;
   min-height: 100vh;
+  transition: margin 0.3s ease;
 `;
 
 export const Header = styled.div`
@@ -17,10 +17,12 @@ export const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  margin-top: 20px;
 
   h1 {
     font-size: 1.8rem;
-    color: #1a1a1a;
+    color: #00e6e6;
+    font-weight: 600;
   }
 `;
 
@@ -51,7 +53,7 @@ export const GroupCard = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
+  background: rgba(26, 26, 26);
   padding: 14px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -65,7 +67,7 @@ export const GroupInfo = styled.div`
 export const GroupName = styled.span`
   font-weight: 600;
   font-size: 1.1rem;
-  color: #1a1a1a;
+  color: #fff;
 `;
 
 export const GroupMembers = styled.span`
