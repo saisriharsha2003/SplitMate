@@ -9,8 +9,7 @@ import {
 import {
   FaHome,
   FaUsers,
-  FaPlus,
-  FaChartLine,
+  FaReceipt,
   FaSignOutAlt,
   FaTachometerAlt
 } from "react-icons/fa";
@@ -23,8 +22,7 @@ const Sidebar = ({ isOpen }) => {
         <SidebarItem as={NavLink} to="/home" icon={<FaHome />} label="Home" isOpen={isOpen} />
         <SidebarItem as={NavLink} to="/dashboard" icon={<FaTachometerAlt />} label="Dashboard" isOpen={isOpen} />
         <SidebarItem as={NavLink} to="/groups" icon={<FaUsers />} label="Groups" isOpen={isOpen} />
-        <SidebarItem icon={<FaPlus />} label="Add Expense" isOpen={isOpen} />
-        <SidebarItem icon={<FaChartLine />} label="Activity" isOpen={isOpen} />
+        <SidebarItem as={NavLink} to="/expense-tracker" icon={<FaReceipt />} label="Expense Tracker" isOpen={isOpen} />
       </SidebarTop>
 
       <SidebarBottom>
