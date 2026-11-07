@@ -13,6 +13,12 @@ import {
   resetNotificationCount,
   createGroup,
   getUserGroups,
+  getUserExpenses,
+  getPersonalExpenses,
+  createPersonalExpense,
+  updatePersonalExpense,
+  deletePersonalExpense,
+  getDashboardMetrics,
   getGroupById,
   addGroupExpense,
   getGroupExpense,
@@ -32,13 +38,17 @@ router.route('/').get((req, res) => {
 router.post('/register', register);
 router.post('/login', login);
 router.get('/profile', verifyJWT, getUserProfile);
-router.put('/update-password/:username', updatePassword);
+router.get('/dashboard/metrics', verifyJWT, getDashboardMetrics);
+router.put('/profile/password', verifyJWT, updatePassword);
 router.put('/profile', verifyJWT, updateUserProfile);
 router.post('/reset-password', resetPassword);
 router.post('/verify-code', verifyCode);
 router.put('/new-password', newPassword);
 router.post('/groups/new', verifyJWT, createGroup);
 router.get('/groups', verifyJWT, getUserGroups);
+router.get('/expenses', verifyJWT, getUserExpenses);
+router.route('/personal-expenses').get(verifyJWT, getPersonalExpenses).post(verifyJWT, createPersonalExpense);
+router.route('/personal-expenses/:expenseId').put(verifyJWT, updatePersonalExpense).delete(verifyJWT, deletePersonalExpense);
 router.get("/groups/:id", verifyJWT, getGroupById);
 router.post("/groups/:id/expenses", verifyJWT, addGroupExpense);
 router.get("/groups/:groupId/expenses/:expenseId", verifyJWT, getGroupExpense);

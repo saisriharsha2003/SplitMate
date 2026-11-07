@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Group from "../models/Groups.js";
 import Expense from "../models/Expense.js";
 import GroupActivity from "../models/GroupActivity.js";
+import PersonalExpense from "../models/PersonalExpense.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -222,6 +223,176 @@ export const getUserGroups = async (req, res) => {
   }
 };
 
+export const getUserExpenses = async (req, res) => {
+  try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
+    const groups = await Group.find({ "members.user": req.user.userId }).select("_id");
+    const groupIds = groups.map((group) => group._id);
+    const filter = { groupId: { $in: groupIds } };
+    const [expenses, total] = await Promise.all([
+      Expense.find(filter)
+        .populate("groupId", "name currency")
+        .populate("paidBy", "name username")
+        .populate("splitAmong.user", "name username")
+        .sort({ date: -1, createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Expense.countDocuments(filter),
+    ]);
+
+    return res.json({ expenses, total, page, pages: Math.ceil(total / limit), limit });
+  } catch (error) {
+    console.error("Error fetching user expenses:", error);
+    return res.status(500).json({ error: "Could not load expense history" });
+  }
+};
+
+const parsePersonalExpense = (body) => {
+  const description = typeof body.description === "string" ? body.description.trim() : "";
+  const amount = Number(body.amount);
+  const date = typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date)
+    ? new Date(`${body.date}T00:00:00.000Z`)
+    : new Date(NaN);
+  if (!description || description.length > 140) throw new Error("Enter a description up to 140 characters");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount greater than zero");
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== body.date) {
+    throw new Error("Choose a valid expense date");
+  }
+  const currency = body.currency || "INR";
+  if (!["INR", "USD", "EUR", "GBP"].includes(currency)) throw new Error("Choose a supported currency");
+  const category = typeof body.category === "string" && body.category.trim() ? body.category.trim() : "Other";
+  if (category.length > 40) throw new Error("Category must be 40 characters or fewer");
+  const notes = typeof body.notes === "string" ? body.notes.trim() : "";
+  if (notes.length > 500) throw new Error("Notes must be 500 characters or fewer");
+  return { description, amount: Math.round(amount * 100) / 100, currency, category, date, notes };
+};
+
+export const getPersonalExpenses = async (req, res) => {
+  try {
+    const [expenses, user] = await Promise.all([
+      PersonalExpense.find({ owner: req.user.userId }).sort({ date: -1, createdAt: -1 }),
+      User.findById(req.user.userId).select("default_currency"),
+    ]);
+    return res.json({ expenses, currency: user?.default_currency || "INR" });
+  } catch (error) {
+    console.error("Error fetching personal expenses:", error);
+    return res.status(500).json({ error: "Could not load personal expenses" });
+  }
+};
+
+export const getDashboardMetrics = async (req, res) => {
+  try {
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const [groups, user] = await Promise.all([
+      Group.find({ "members.user": req.user.userId }).select("_id name currency members"),
+      User.findById(req.user.userId).select("default_currency"),
+    ]);
+    const groupIds = groups.map((group) => group._id);
+    const [groupAllTime, groupThisMonth, personalAllTime, personalThisMonth, topPersonalCategories] = await Promise.all([
+      Expense.aggregate([
+        { $match: { groupId: { $in: groupIds } } },
+        { $group: { _id: "$currency", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+      ]),
+      Expense.aggregate([
+        { $match: { groupId: { $in: groupIds }, date: { $gte: monthStart, $lt: nextMonthStart } } },
+        { $group: { _id: "$currency", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+      ]),
+      PersonalExpense.aggregate([
+        { $match: { owner: new mongoose.Types.ObjectId(req.user.userId) } },
+        { $group: { _id: "$currency", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+      ]),
+      PersonalExpense.aggregate([
+        { $match: { owner: new mongoose.Types.ObjectId(req.user.userId), date: { $gte: monthStart, $lt: nextMonthStart } } },
+        { $group: { _id: "$currency", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+      ]),
+      PersonalExpense.aggregate([
+        { $match: { owner: new mongoose.Types.ObjectId(req.user.userId), date: { $gte: monthStart, $lt: nextMonthStart } } },
+        { $group: { _id: { name: "$category", currency: "$currency" }, amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+        { $sort: { amount: -1 } },
+        { $limit: 1 },
+      ]),
+    ]);
+
+    return res.json({
+      month: monthStart.toISOString().slice(0, 7),
+      currency: user?.default_currency || "INR",
+      groups: {
+        count: groups.length,
+        memberCount: groups.reduce((total, group) => total + group.members.length, 0),
+        expenseCount: groupAllTime.reduce((total, item) => total + item.count, 0),
+        allTimeByCurrency: groupAllTime.map(({ _id, amount, count }) => ({ currency: _id || "INR", amount, count })),
+        thisMonthByCurrency: groupThisMonth.map(({ _id, amount, count }) => ({ currency: _id || "INR", amount, count })),
+      },
+      personal: {
+        expenseCount: personalAllTime.reduce((total, item) => total + item.count, 0),
+        allTimeByCurrency: personalAllTime.map(({ _id, amount, count }) => ({ currency: _id || "INR", amount, count })),
+        thisMonthByCurrency: personalThisMonth.map(({ _id, amount, count }) => ({ currency: _id || "INR", amount, count })),
+        topCategory: topPersonalCategories[0] ? {
+          name: topPersonalCategories[0]._id.name || "Other",
+          currency: topPersonalCategories[0]._id.currency || user?.default_currency || "INR",
+          amount: topPersonalCategories[0].amount,
+          count: topPersonalCategories[0].count,
+        } : null,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard metrics:", error);
+    return res.status(500).json({ error: "Could not load dashboard metrics" });
+  }
+};
+
+export const createPersonalExpense = async (req, res) => {
+  try {
+    let input;
+    try { input = parsePersonalExpense(req.body); }
+    catch (error) { return res.status(400).json({ error: error.message }); }
+    const user = await User.findById(req.user.userId).select("default_currency");
+    const expense = await PersonalExpense.create({
+      owner: req.user.userId,
+      ...input,
+      currency: req.body.currency || user?.default_currency || "INR",
+    });
+    return res.status(201).json({ message: "Personal expense added", expense });
+  } catch (error) {
+    console.error("Error creating personal expense:", error);
+    return res.status(500).json({ error: "Could not add personal expense" });
+  }
+};
+
+export const updatePersonalExpense = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.expenseId)) return res.status(400).json({ error: "Invalid expense ID" });
+    let input;
+    try { input = parsePersonalExpense(req.body); }
+    catch (error) { return res.status(400).json({ error: error.message }); }
+    const expense = await PersonalExpense.findOneAndUpdate(
+      { _id: req.params.expenseId, owner: req.user.userId },
+      input,
+      { new: true, runValidators: true }
+    );
+    if (!expense) return res.status(404).json({ error: "Personal expense not found" });
+    return res.json({ message: "Personal expense updated", expense });
+  } catch (error) {
+    console.error("Error updating personal expense:", error);
+    return res.status(500).json({ error: "Could not update personal expense" });
+  }
+};
+
+export const deletePersonalExpense = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.expenseId)) return res.status(400).json({ error: "Invalid expense ID" });
+    const expense = await PersonalExpense.findOneAndDelete({ _id: req.params.expenseId, owner: req.user.userId });
+    if (!expense) return res.status(404).json({ error: "Personal expense not found" });
+    return res.json({ message: "Personal expense deleted" });
+  } catch (error) {
+    console.error("Error deleting personal expense:", error);
+    return res.status(500).json({ error: "Could not delete personal expense" });
+  }
+};
+
 export const getGroupById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -245,10 +416,32 @@ export const getGroupById = async (req, res) => {
       .populate("lastUpdatedBy", "name username email")
       .populate("splitAmong.user", "name username email")
       .sort({ date: -1, createdAt: -1 });
-    const activity = await GroupActivity.find({ groupId: group._id })
+    const activityRecords = await GroupActivity.find({ groupId: group._id })
       .populate("actor", "name username")
       .sort({ createdAt: -1 })
       .limit(100);
+    const activity = activityRecords.map((record) => record.toObject());
+    const legacySplitIds = [...new Set(activity.flatMap((item) => {
+      if (item.details?.splitBreakdown?.length) return [];
+      const splits = item.details?.split || item.details?.participants || [];
+      return splits.map((split) => String(split?.user?._id || split?.user || "")).filter(Boolean);
+    }))];
+    const legacySplitUsers = legacySplitIds.length
+      ? await User.find({ _id: { $in: legacySplitIds } }).select("name")
+      : [];
+    activity.forEach((item) => {
+      if (item.details?.splitBreakdown?.length) return;
+      const splits = item.details?.split || item.details?.participants || [];
+      if (!splits.length) return;
+      item.details.splitBreakdown = splits.map((split) => {
+        const userId = String(split?.user?._id || split?.user || "");
+        return {
+          name: legacySplitUsers.find((user) => user._id.toString() === userId)?.name || "Unknown member",
+          shareAmount: split.shareAmount,
+          percentage: split.percentage,
+        };
+      });
+    });
 
     let youOwe = 0;
     let owedToYou = 0;
@@ -431,7 +624,11 @@ export const addGroupExpense = async (req, res) => {
       expenseId: expense._id,
       description: cleanDescription,
       amount: totalCents / 100,
-      participants: splitAmong.map((split) => ({ user: split.user, shareAmount: split.shareAmount, percentage: split.percentage })),
+      splitBreakdown: splitAmong.map((split) => ({
+        name: participantUsers.find((participant) => participant._id.toString() === split.user.toString())?.name || "Unknown member",
+        shareAmount: split.shareAmount,
+        percentage: split.percentage,
+      })),
     });
     return res.status(201).json({
       message: "Expense added successfully",
@@ -551,9 +748,9 @@ export const updateGroupExpense = async (req, res) => {
       const previous = oldState.splitAmong.find((split) => split.user === next.user);
       return previous && previous.shareAmount !== next.shareAmount;
     });
-    const affectedIds = [...new Set([...addedIds, ...removedIds, ...changedShares.map((split) => split.user)])];
-    const affectedPeople = affectedIds.length ? await User.find({ _id: { $in: affectedIds } }).select("name") : [];
-    const personName = (userId) => affectedPeople.find((person) => person._id.toString() === userId)?.name || "A member";
+    const participantIds = [...new Set([...oldParticipantIds, ...newParticipantIds])];
+    const activityPeople = participantIds.length ? await User.find({ _id: { $in: participantIds } }).select("name") : [];
+    const personName = (userId) => activityPeople.find((person) => person._id.toString() === userId)?.name || "A member";
     if (oldState.splitType !== splitType) changes.push(`split type changed from ${oldState.splitType} to ${splitType}`);
     if (addedIds.length) changes.push(`added ${addedIds.map(personName).join(", ")} to the split`);
     if (removedIds.length) changes.push(`removed ${removedIds.map(personName).join(", ")} from the split`);
@@ -569,6 +766,13 @@ export const updateGroupExpense = async (req, res) => {
       changes,
       previousSplit: oldState.splitAmong,
       split: newSplits,
+      splitBreakdown: newSplits.map((split) => ({
+        name: personName(split.user),
+        shareAmount: split.shareAmount,
+        percentage: Number.isFinite(Number(shares?.find((entry) => String(entry.userId) === split.user)?.percentage))
+          ? Number(shares.find((entry) => String(entry.userId) === split.user).percentage)
+          : undefined,
+      })),
     });
 
     return res.json({ message: "Expense updated successfully", expenseId: expense._id });
@@ -600,10 +804,16 @@ export const deleteGroupExpense = async (req, res) => {
       return res.status(403).json({ error: "Only the expense creator, payer, or a group admin can delete it" });
     }
 
+    const splitUsers = await User.find({ _id: { $in: expense.splitAmong.map((split) => split.user) } }).select("name");
     await recordGroupActivity(group._id, currentUserId, "expense_deleted", `deleted “${expense.description}” (${group.currency || "INR"} ${expense.amount.toFixed(2)})`, {
       expenseId: expense._id,
       description: expense.description,
       amount: expense.amount,
+      splitBreakdown: expense.splitAmong.map((split) => ({
+        name: splitUsers.find((user) => user._id.toString() === split.user.toString())?.name || "Unknown member",
+        shareAmount: split.shareAmount,
+        percentage: split.percentage,
+      })),
     });
     await expense.deleteOne();
     return res.json({ message: "Expense deleted successfully" });
@@ -821,10 +1031,12 @@ export const updateUserProfile = async (req, res) => {
 
 export const updatePassword = async (req, res) => {
   try {
-    const { username } = req.params;
     const { currentPassword, newPassword } = req.body;
+    if (typeof currentPassword !== "string" || !currentPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+      return res.status(400).json({ message: "Enter your current password and a new password with at least 6 characters" });
+    }
 
-    const user = await User.findOne({ username });
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -833,6 +1045,9 @@ export const updatePassword = async (req, res) => {
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Current password is incorrect" });
+    }
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ message: "Your new password must be different from the current password" });
     }
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
