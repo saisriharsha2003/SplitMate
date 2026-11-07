@@ -524,6 +524,224 @@ export const PageMessage = styled.div`
   font-size: 1rem;
 `;
 
+export const SettlementPanel = styled.section`
+  scroll-margin-top: 96px;
+  margin: 24px 0;
+  padding: 22px;
+  border: 1px solid rgba(251, 204, 19, 0.2);
+  border-radius: 18px;
+  background: linear-gradient(130deg, rgba(251, 204, 19, 0.085), rgba(32, 33, 34, 0.92) 45%, rgba(22, 23, 24, 0.96));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
+  h3 { margin: 0 0 6px; color: #f4d75e; font-size: 1.08rem; }
+  p { margin: 0; color: #aeb2b5; font-size: .86rem; line-height: 1.5; }
+`;
+
+export const DebtPanel = styled.section`
+  margin: 0 0 30px;
+  padding: clamp(17px, 2.2vw, 26px);
+  border: 1px solid rgba(251, 204, 19, 0.15);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(251,204,19,.075), transparent 38%),
+    linear-gradient(145deg, rgba(32,33,34,.98), rgba(19,20,21,.98));
+  box-shadow: 0 16px 42px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.025);
+
+  ${SectionTitle} { margin-bottom: 6px; }
+`;
+
+export const DebtHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+  @media (max-width: 520px) { align-items: flex-start; }
+`;
+
+export const DebtDescription = styled.p`
+  margin: 0;
+  color: #92999e;
+  font-size: .82rem;
+  line-height: 1.45;
+`;
+
+export const DebtCount = styled.span`
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid rgba(251,204,19,.2);
+  border-radius: 999px;
+  background: rgba(251,204,19,.07);
+  color: #e8cc56;
+  font-size: .72rem;
+  font-weight: 700;
+  white-space: nowrap;
+`;
+
+export const DebtList = styled.div`
+  display: grid;
+  gap: 10px;
+`;
+
+export const DebtRow = styled.div`
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) minmax(108px, auto);
+  align-items: center;
+  gap: 13px;
+  min-height: 70px;
+  padding: 12px 15px 12px 19px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 13px;
+  background: linear-gradient(105deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+  box-shadow: 0 7px 17px rgba(0,0,0,.12);
+  animation: ${enter} 320ms ease both;
+  transition: transform 170ms ease, border-color 170ms ease, background 170ms ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 12px auto 12px 0;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: ${({ $direction }) => ($direction === "incoming" ? "#58c995" : "#e99a83")};
+  }
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ $direction }) => ($direction === "incoming" ? "rgba(88,201,149,.28)" : "rgba(233,154,131,.28)")};
+    background: linear-gradient(105deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+  }
+  @media (max-width: 560px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px 10px;
+    padding: 12px 12px 12px 16px;
+    & > strong:last-child { grid-column: 1 / -1; justify-self: stretch; text-align: right; }
+  }
+  @media (prefers-reduced-motion: reduce) { animation: none; transition: none; }
+`;
+
+export const DebtPerson = styled.strong`
+  display: block;
+  overflow: hidden;
+  padding: 10px 12px;
+  border: 1px solid ${({ $current }) => ($current ? "rgba(251,204,19,.2)" : "rgba(255,255,255,.055)")};
+  border-radius: 9px;
+  background: ${({ $current }) => ($current ? "rgba(251,204,19,.065)" : "rgba(0,0,0,.18)")};
+  color: ${({ $current }) => ($current ? "#f5dc70" : "#d9dcdd")};
+  font-size: .86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  @media (max-width: 560px) { padding: 9px 10px; font-size: .8rem; }
+`;
+
+export const DebtConnector = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #939a9e;
+  font-size: .7rem;
+  font-weight: 700;
+  svg { color: #d4b33b; font-size: .78rem; }
+  @media (max-width: 560px) { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+`;
+
+export const DebtAmount = styled.strong`
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid ${({ $direction }) => ($direction === "incoming" ? "rgba(88,201,149,.2)" : "rgba(233,154,131,.2)")};
+  border-radius: 9px;
+  background: ${({ $direction }) => ($direction === "incoming" ? "rgba(88,201,149,.075)" : "rgba(233,154,131,.075)")};
+  color: ${({ $direction }) => ($direction === "incoming" ? "#77d5a7" : "#f0a892")};
+  font-size: .9rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  @media (max-width: 560px) { padding: 8px 10px; }
+`;
+
+export const SettlementForm = styled.form`
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(140px, .8fr) minmax(180px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin-top: 18px;
+  @media (max-width: 820px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+`;
+
+export const SettlementField = styled.label`
+  display: grid;
+  gap: 7px;
+  color: #c6c9ca;
+  font-size: .78rem;
+  font-weight: 650;
+`;
+
+export const SettlementControl = styled.input`
+  width: 100%;
+  min-height: 43px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  background: rgba(8,9,10,.55);
+  color: #f1f1ef;
+  color-scheme: dark;
+  outline: none;
+  &:focus { border-color: rgba(251,204,19,.65); box-shadow: 0 0 0 3px rgba(251,204,19,.1); }
+`;
+
+export const SettlementSelect = styled.select`
+  width: 100%;
+  min-height: 43px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  background: #171819;
+  color: #f1f1ef;
+  color-scheme: dark;
+  outline: none;
+  &:focus { border-color: rgba(251,204,19,.65); box-shadow: 0 0 0 3px rgba(251,204,19,.1); }
+`;
+
+export const SettlementButton = styled.button`
+  min-height: 43px;
+  padding: 0 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  background: linear-gradient(120deg, #fbcc13, #eeb900);
+  color: #191919;
+  font-size: .85rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 150ms ease, filter 150ms ease;
+  &:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.07); }
+  &:disabled { opacity: .55; cursor: wait; }
+`;
+
+export const SettlementModes = styled.div`
+  display: inline-flex;
+  gap: 4px;
+  margin: 10px 0 4px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 11px;
+  background: rgba(0,0,0,.22);
+`;
+
+export const SettlementModeButton = styled.button`
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: ${({ $active }) => ($active ? "rgba(251,204,19,.17)" : "transparent")};
+  color: ${({ $active }) => ($active ? "#f4d75e" : "#aeb2b5")};
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  &:hover { color: #f4d75e; }
+`;
+
 export const FloatingButton = styled.button`
   position: fixed;
   z-index: 1200;

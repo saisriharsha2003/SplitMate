@@ -154,7 +154,11 @@ const Groups = () => {
                     >
                       <FaEye />
                     </ActionButton>
-                    <ActionButton title="Settle Up">
+                    <ActionButton
+                      title="Settle Up"
+                      aria-label={`Settle up in ${group.name}`}
+                      onClick={() => navigate(`/groups/${group._id}#settle-up`)}
+                    >
                       <FaHandHoldingUsd />
                     </ActionButton>
                     {group.members?.some((m) => m.user?.username === username) && (
