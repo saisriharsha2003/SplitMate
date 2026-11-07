@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
+import { FaArrowLeft, FaEnvelope, FaPhone, FaUser, FaUserEdit } from "react-icons/fa";
 import { BeatLoader } from "react-spinners";
 import "react-toastify/dist/ReactToastify.css";
 import Nav from "../Nav/Nav";
@@ -12,11 +12,19 @@ import { BASE_URL } from "../config";
 import {
   ProfileContainer,
   ProfileBox,
+  ProfileHeader,
+  ProfileAvatar,
   Title,
+  Description,
   ProfileForm,
+  Field,
+  FieldLabel,
   InputGroup,
   Input,
+  FormActions,
+  CancelButton,
   SubmitButton,
+  ProfileLoading,
 } from "./EditProfileStyle";
 
 const EditProfile = () => {
@@ -81,72 +89,58 @@ const EditProfile = () => {
       <Nav toggleSidebar={() => setIsSidebarOpen((open) => !open)} />
       <div style={{ display: "flex", flex: 1, paddingTop: "60px" }}>
         <Sidebar isOpen={isSidebarOpen} />
-        <ProfileContainer
-          style={{
-            marginLeft: isSidebarOpen ? "220px" : "80px",
-            transition: "margin 0.3s ease",
-            flex: 1,
-            width: "auto",
-            minHeight: "calc(100vh - 60px)",
-            paddingTop: "36px",
-          }}
-        >
+        <ProfileContainer style={{ marginLeft: isSidebarOpen ? "220px" : "80px" }}>
           <ProfileBox
             as={motion.section}
-            initial={{ opacity: 0, y: -16 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
           >
-            <Title>Edit Profile</Title>
+            <ProfileHeader>
+              <ProfileAvatar><FaUserEdit /></ProfileAvatar>
+              <div>
+                <Title>Edit your profile</Title>
+                <Description>Keep your account details up to date.</Description>
+              </div>
+            </ProfileHeader>
             {loading ? (
-              <BeatLoader color="#00e6e6" />
+              <ProfileLoading><BeatLoader color="#fbcc13" /></ProfileLoading>
             ) : (
               <ProfileForm onSubmit={handleSubmit}>
-                <InputGroup>
-                  <FaUser aria-hidden="true" />
-                  <Input
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Full name"
-                    required
-                  />
-                </InputGroup>
-                <InputGroup>
-                  <FaEnvelope aria-hidden="true" />
-                  <Input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Email"
-                    required
-                  />
-                </InputGroup>
-                <InputGroup>
-                  <FaPhone aria-hidden="true" />
-                  <Input
-                    name="mobile"
-                    type="tel"
-                    value={formData.mobile}
-                    onChange={handleChange}
-                    placeholder="10 digit mobile number"
-                    pattern="[0-9]{10}"
-                    required
-                  />
-                </InputGroup>
-                <InputGroup>
-                  <FaUser aria-hidden="true" />
-                  <Input
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    placeholder="Username"
-                    required
-                  />
-                </InputGroup>
-                <SubmitButton type="submit" disabled={saving}>
-                  {saving ? <BeatLoader size={8} color="#fff" /> : "Update Profile"}
-                </SubmitButton>
+                <Field>
+                  <FieldLabel htmlFor="profile-name">Full name</FieldLabel>
+                  <InputGroup>
+                    <FaUser aria-hidden="true" />
+                    <Input id="profile-name" name="name" autoComplete="name" value={formData.name} onChange={handleChange} placeholder="Your full name" required />
+                  </InputGroup>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="profile-email">Email address</FieldLabel>
+                  <InputGroup>
+                    <FaEnvelope aria-hidden="true" />
+                    <Input id="profile-email" name="email" type="email" autoComplete="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" required />
+                  </InputGroup>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="profile-mobile">Mobile number</FieldLabel>
+                  <InputGroup>
+                    <FaPhone aria-hidden="true" />
+                    <Input id="profile-mobile" name="mobile" type="tel" autoComplete="tel" value={formData.mobile} onChange={handleChange} placeholder="10 digit mobile number" pattern="[0-9]{10}" required />
+                  </InputGroup>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="profile-username">Username</FieldLabel>
+                  <InputGroup>
+                    <FaUser aria-hidden="true" />
+                    <Input id="profile-username" name="username" autoComplete="username" value={formData.username} onChange={handleChange} placeholder="Choose a username" required />
+                  </InputGroup>
+                </Field>
+                <FormActions>
+                  <CancelButton type="button" onClick={() => navigate(-1)}><FaArrowLeft /> Cancel</CancelButton>
+                  <SubmitButton type="submit" disabled={saving}>
+                    {saving ? <BeatLoader size={8} color="#171717" /> : "Save changes"}
+                  </SubmitButton>
+                </FormActions>
               </ProfileForm>
             )}
           </ProfileBox>
