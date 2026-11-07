@@ -26,7 +26,7 @@ export const FormBox = styled.div`
   background: rgba(0,0,0,0.85);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 0 20px #00e6e6;
+  box-shadow: 0 0 20px #FBCC13;
   max-width: 500px;
   width: 100%;
   text-align: center;
@@ -36,7 +36,7 @@ export const FormBox = styled.div`
 export const Title = styled.h2`
   font-size: 24px;
   font-weight: bold;
-  color: #00e6e6;
+  color: #FBCC13;
   margin-bottom: 20px;
 `;
 
@@ -66,7 +66,7 @@ export const InputGroup = styled.div`
   }
 
   .icon {
-    color: #00e6e6;
+    color: #FBCC13;
     font-size: 18px;
   }
 `;

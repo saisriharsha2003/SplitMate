@@ -26,14 +26,10 @@ const NewGroup = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const username = localStorage.getItem("username");
-
   const [formData, setFormData] = useState({
     name: "",
     currency: "INR",
-    createdBy: username,
   });
-  console.log("Username from localStorage:", username);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,10 +49,10 @@ const NewGroup = () => {
 
     setLoading(true);
     try {
-      console.log("Form Data Submitted:", formData);
       await axios.post(`${BASE_URL}/api/user/groups/new`, formData, {
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       toast.success("Group created successfully!", { autoClose: 1500 });
