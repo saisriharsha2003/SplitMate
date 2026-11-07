@@ -209,6 +209,7 @@ export const ExpenseCard = styled.article`
 `;
 
 export const ExpenseLeft = styled.div`
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -244,6 +245,77 @@ export const ExpenseTag = styled.span`
   font-size: 0.68rem;
   font-weight: 650;
   letter-spacing: 0.02em;
+`;
+
+export const SplitBreakdown = styled.section`
+  width: 100%;
+  margin-top: 7px;
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  background: rgba(12, 13, 14, 0.36);
+`;
+
+export const SplitBreakdownHeading = styled.h3`
+  margin: 0 0 9px;
+  color: #aeb3b6;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+`;
+
+export const SplitPeople = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+  gap: 6px;
+
+  ${(props) => props.$many && `
+    max-height: 280px;
+    overflow-y: auto;
+    align-content: start;
+    padding-right: 5px;
+    scrollbar-color: rgba(251, 204, 19, 0.3) rgba(255, 255, 255, 0.035);
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar { width: 7px; }
+    &::-webkit-scrollbar-thumb { border-radius: 8px; background: rgba(251, 204, 19, 0.28); }
+  `}
+`;
+
+export const SplitPerson = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.025);
+`;
+
+export const SplitPersonName = styled.span`
+  overflow: hidden;
+  color: #c7cbcd;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const SplitPersonShare = styled.span`
+  flex-shrink: 0;
+  color: #f2d65c;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  span {
+    margin-left: 4px;
+    color: #81888c;
+    font-size: 0.68rem;
+    font-weight: 550;
+  }
 `;
 
 export const MembersSection = styled.section`
@@ -328,6 +400,11 @@ export const ActivityItem = styled.article`
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   &:last-child { border-bottom: 0; }
   @media (max-width: 620px) { flex-direction: column; gap: 6px; }
+`;
+
+export const ActivityCopy = styled.div`
+  flex: 1 1 auto;
+  min-width: 0;
 `;
 
 export const ActivityMessage = styled.div`

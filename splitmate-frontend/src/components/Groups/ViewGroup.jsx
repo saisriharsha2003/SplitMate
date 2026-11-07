@@ -28,6 +28,12 @@ import {
   ExpenseDeleteButton,
   ExpenseTags,
   ExpenseTag,
+  SplitBreakdown,
+  SplitBreakdownHeading,
+  SplitPeople,
+  SplitPerson,
+  SplitPersonName,
+  SplitPersonShare,
   MembersSection,
   MemberRow,
   MemberInfo,
@@ -36,6 +42,7 @@ import {
   MemberRole,
   ActivityList,
   ActivityItem,
+  ActivityCopy,
   ActivityMessage,
   ActivityTime,
   Pagination,
@@ -55,6 +62,7 @@ const ViewGroup = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [membersPage, setMembersPage] = useState(1);
   const [activityPage, setActivityPage] = useState(1);
+  const [expensePage, setExpensePage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -109,7 +117,10 @@ const ViewGroup = () => {
   const sortedExpenses = [...(group.expenses || [])].sort(
     (a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
   );
-  const groupedExpenses = sortedExpenses.reduce((acc, expense) => {
+  const expensePageCount = Math.ceil(sortedExpenses.length / 5);
+  const visibleExpensePage = Math.min(expensePage, Math.max(expensePageCount, 1));
+  const visibleExpenses = sortedExpenses.slice((visibleExpensePage - 1) * 5, visibleExpensePage * 5);
+  const groupedExpenses = visibleExpenses.reduce((acc, expense) => {
     const expenseDate = new Date(expense.date || expense.createdAt);
     const monthKey = `${expenseDate.getUTCFullYear()}-${String(expenseDate.getUTCMonth() + 1).padStart(2, "0")}`;
     if (!acc[monthKey]) acc[monthKey] = [];
@@ -126,6 +137,10 @@ const ViewGroup = () => {
   const currentMember = group.members?.find((member) => member.user?.username === username);
   const canManageGroup = currentMember?.role === "admin" || group.createdBy?.username === username;
   const splitLabels = { equal: "Equal split", percentage: "Percentage split", amount: "Custom split" };
+  const formatMoney = (value) => new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: group.currency || "INR",
+  }).format(Number(value || 0));
   const members = group.members || [];
   const activity = group.activity || [];
   const membersPageCount = Math.ceil(members.length / 2);
@@ -208,6 +223,25 @@ const ViewGroup = () => {
                       <ExpenseTag>{splitLabels[exp.splitType] || "Equal split"}</ExpenseTag>
                       <ExpenseTag>{exp.splitAmong?.length || 0} {(exp.splitAmong?.length || 0) === 1 ? "person" : "people"}</ExpenseTag>
                     </ExpenseTags>
+                    {!!exp.splitAmong?.length && (
+                      <SplitBreakdown>
+                        <SplitBreakdownHeading>Each person’s share</SplitBreakdownHeading>
+                        <SplitPeople $many={exp.splitAmong.length > 10}>
+                          {exp.splitAmong.map((split) => {
+                            const shareAmount = Number(split.shareAmount ?? (Number(exp.amount || 0) / exp.splitAmong.length));
+                            const percentage = Number.isFinite(Number(split.percentage))
+                              ? Number(split.percentage)
+                              : (Number(exp.amount) > 0 ? (shareAmount / Number(exp.amount)) * 100 : 0);
+                            return (
+                              <SplitPerson key={split.user?._id || split.user}>
+                                <SplitPersonName>{split.user?.name || "Unknown member"}</SplitPersonName>
+                                <SplitPersonShare>{formatMoney(shareAmount)} <span>{percentage.toFixed(1)}%</span></SplitPersonShare>
+                              </SplitPerson>
+                            );
+                          })}
+                        </SplitPeople>
+                      </SplitBreakdown>
+                    )}
                   </ExpenseLeft>
                   <ExpenseAmount>₹{Number(exp.amount || 0).toFixed(2)}</ExpenseAmount>
                   <ExpenseActions>
@@ -223,6 +257,13 @@ const ViewGroup = () => {
               ))}
             </div>
           ))}
+          {expensePageCount > 1 && (
+            <Pagination aria-label="Expense history pages">
+              <PageButton type="button" onClick={() => setExpensePage(visibleExpensePage - 1)} disabled={visibleExpensePage === 1}>Previous</PageButton>
+              <PageStatus>Page {visibleExpensePage} of {expensePageCount} · {sortedExpenses.length} expenses</PageStatus>
+              <PageButton type="button" onClick={() => setExpensePage(visibleExpensePage + 1)} disabled={visibleExpensePage === expensePageCount}>Next</PageButton>
+            </Pagination>
+          )}
 
           <MembersSection>
             <SectionTitle>Group activity</SectionTitle>
@@ -233,7 +274,27 @@ const ViewGroup = () => {
                 <ActivityList>
                   {visibleActivity.map((item) => (
                     <ActivityItem key={item._id}>
-                      <ActivityMessage><strong>{item.actor?.name || "A former member"}</strong> {item.message}</ActivityMessage>
+                      <ActivityCopy>
+                        <ActivityMessage><strong>{item.actor?.name || "A former member"}</strong> {item.message}</ActivityMessage>
+                        {!!item.details?.splitBreakdown?.length && (
+                          <SplitBreakdown>
+                            <SplitBreakdownHeading>Split at this update</SplitBreakdownHeading>
+                            <SplitPeople $many={item.details.splitBreakdown.length > 10}>
+                              {item.details.splitBreakdown.map((split, index) => {
+                                const percentage = Number.isFinite(Number(split.percentage))
+                                  ? Number(split.percentage)
+                                  : (Number(item.details.amount) > 0 ? (Number(split.shareAmount) / Number(item.details.amount)) * 100 : 0);
+                                return (
+                                  <SplitPerson key={`${split.name}-${index}`}>
+                                    <SplitPersonName>{split.name || "Unknown member"}</SplitPersonName>
+                                    <SplitPersonShare>{formatMoney(split.shareAmount)} <span>{percentage.toFixed(1)}%</span></SplitPersonShare>
+                                  </SplitPerson>
+                                );
+                              })}
+                            </SplitPeople>
+                          </SplitBreakdown>
+                        )}
+                      </ActivityCopy>
                       <ActivityTime>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.createdAt))}</ActivityTime>
                     </ActivityItem>
                   ))}
