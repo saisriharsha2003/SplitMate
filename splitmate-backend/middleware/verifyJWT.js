@@ -1,20 +1,19 @@
-const jwt = require('jsonwebtoken');
+import jwt from "jsonwebtoken";
 
 const verifyJWT = (req, res, next) => {
-    const token = req.header('Authorization')?.split(' ')[1];  
+    const authorization = req.header("Authorization");
+    const [scheme, token] = authorization?.split(" ") || [];
 
-    if (!token) {
-        return res.status(401).json({ message: 'No token provided, authorization denied.' });
+    if (scheme !== "Bearer" || !token) {
+        return res.status(401).json({ error: "Authentication required." });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ message: 'Token is not valid.' });
-        }
-
-        req.user = decoded; 
-        next(); 
-    });
+    try {
+        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: "Token is not valid." });
+    }
 };
 
-module.exports = verifyJWT;
+export default verifyJWT;
