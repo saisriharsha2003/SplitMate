@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../config";
 import {
@@ -9,29 +10,37 @@ import {
   ModalForm,
   ModalInputGroup,
   ModalInput,
+  ModalActions,
   ModalButton,
   ModalCancelButton,
 } from "./JoinGroupModalStyle";
 import { toast } from "react-toastify";
 
 const JoinGroupModal = ({ isOpen, onClose, refreshGroups }) => {
+  const navigate = useNavigate();
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleJoin = async (e) => {
     e.preventDefault();
-    const username = localStorage.getItem("username");
-    if (!inviteCode.trim()) return alert("Enter invite code");
+    if (!inviteCode.trim()) return toast.error("Enter an invite code");
 
     setLoading(true);
     try {
-      await axios.post(`${BASE_URL}/api/user/groups/join`, { username, joinCode: inviteCode });
+      await axios.post(
+        `${BASE_URL}/api/user/groups/join`,
+        { joinCode: inviteCode },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        },
+      );
       toast.success("Joined group successfully!", { autoClose: 1500 });
-      setTimeout(() => {
-          navigate("/groups");
-        }, 2000);
+      setInviteCode("");
+      refreshGroups?.();
+      onClose();
+      navigate("/groups");
     } catch (err) {
-      alert(err.response?.data?.error || "Invalid invite code");
+      toast.error(err.response?.data?.error || "Invalid invite code");
     } finally {
       setLoading(false);
     }
@@ -53,12 +62,14 @@ const JoinGroupModal = ({ isOpen, onClose, refreshGroups }) => {
               required
             />
           </ModalInputGroup>
-          <ModalButton type="submit" disabled={loading} as={motion.button}>
-            {loading ? "Joining..." : "Join Group"}
-          </ModalButton>
-          <ModalCancelButton type="button" onClick={onClose}>
-            Cancel
-          </ModalCancelButton>
+          <ModalActions>
+            <ModalButton type="submit" disabled={loading} as={motion.button}>
+              {loading ? "Joining..." : "Join Group"}
+            </ModalButton>
+            <ModalCancelButton type="button" onClick={onClose}>
+              Cancel
+            </ModalCancelButton>
+          </ModalActions>
         </ModalForm>
       </ModalBox>
     </ModalOverlay>

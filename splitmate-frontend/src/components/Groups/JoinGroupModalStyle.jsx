@@ -22,7 +22,7 @@ export const ModalBox = styled.div`
 `;
 
 export const ModalTitle = styled.h2`
-  color: #00e6e6;
+  color: #FBCC13;
   font-size: 22px;
   text-align: center;
   margin-bottom: 10px;
@@ -32,6 +32,16 @@ export const ModalForm = styled.form`
   display: flex;
   flex-direction: column;
   gap: 12px;
+`;
+
+export const ModalActions = styled.div`
+  display: flex;
+  gap: 16px;
+
+  & > button {
+    flex: 1;
+    min-width: 0;
+  }
 `;
 
 export const ModalInputGroup = styled.div`
@@ -54,12 +64,14 @@ export const ModalInput = styled.input`
 `;
 
 export const ModalButton = styled.button`
+  box-sizing: border-box;
+  min-height: 46px;
   padding: 12px;
   border-radius: 8px;
   border: none;
   font-size: 16px;
   font-weight: 600;
-  background: linear-gradient(135deg, #008b8b, #00e6e6);
+  background: linear-gradient(135deg, #008b8b, #FBCC13);
   color: #fff;
   cursor: pointer;
   transition: transform 0.2s;
