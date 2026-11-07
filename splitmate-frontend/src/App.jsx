@@ -14,6 +14,9 @@ import ExpenseDetails from "./components/Expenses/ExpenseDetails";
 import ExpenseTracker from "./components/Expenses/ExpenseTracker";
 import EditProfile from "./components/Profile/EditProfile";
 import ChangePassword from "./components/Profile/ChangePassword";
+import ProtectedRoute from "./components/Helper/ProtectedRoute";
+import NotFound from "./components/Helper/NotFound";
+import ForgotPassword from "./components/Profile/ForgotPassword";
 import { ToastContainer } from "react-toastify";
 
 import "./index.css";
@@ -25,17 +28,21 @@ const App = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/edit-profile" element={<EditProfile />} />
-        <Route path="/change-password" element={<ChangePassword />} />
-        <Route path="/groups" element={<Groups />} />
-        <Route path="/expense-tracker" element={<ExpenseTracker />} />
-        <Route path="/groups/new" element={<NewGroup />} />
-        <Route path="/groups/:id" element={<ViewGroup />} />
-        <Route path="/groups/:id/expense/new" element={<AddExpense />} />
-        <Route path="/groups/:id/expenses/:expenseId" element={<ExpenseDetails />} />
-        <Route path="/groups/:id/expenses/:expenseId/edit" element={<AddExpense isEdit />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/expense-tracker" element={<ExpenseTracker />} />
+          <Route path="/groups/new" element={<NewGroup />} />
+          <Route path="/groups/:id" element={<ViewGroup />} />
+          <Route path="/groups/:id/expense/new" element={<AddExpense />} />
+          <Route path="/groups/:id/expenses/:expenseId" element={<ExpenseDetails />} />
+          <Route path="/groups/:id/expenses/:expenseId/edit" element={<AddExpense isEdit />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <ToastContainer />
     </>

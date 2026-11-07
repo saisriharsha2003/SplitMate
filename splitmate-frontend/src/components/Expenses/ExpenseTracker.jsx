@@ -30,6 +30,10 @@ const blankForm = (month, currency) => ({
 const ExpenseTracker = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expenses, setExpenses] = useState([]);
+  const [availableMonths, setAvailableMonths] = useState([]);
+  const [monthTotals, setMonthTotals] = useState([]);
+  const [expenseTotal, setExpenseTotal] = useState(0);
+  const [expensePageCount, setExpensePageCount] = useState(0);
   const [currency, setCurrency] = useState("INR");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
   const [expensePage, setExpensePage] = useState(1);
@@ -40,57 +44,52 @@ const ExpenseTracker = () => {
   const [editingExpense, setEditingExpense] = useState(null);
   const [form, setForm] = useState(() => blankForm(getCurrentMonth(), "INR"));
 
-  const fetchExpenses = useCallback(async () => {
+  const fetchExpenses = useCallback(async (month = selectedMonth, page = expensePage) => {
     setLoading(true);
     setError("");
     try {
       const response = await axios.get(`${BASE_URL}/api/user/personal-expenses`, {
+        params: { month, page, limit: 5 },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setExpenses(response.data.expenses || []);
       setCurrency(response.data.currency || "INR");
+      setAvailableMonths(response.data.months || []);
+      setMonthTotals(response.data.monthTotals || []);
+      setExpenseTotal(response.data.total || 0);
+      setExpensePageCount(response.data.pages || 0);
     } catch (requestError) {
       setError(requestError.response?.data?.error || "Could not load your personal expenses.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedMonth, expensePage]);
 
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
 
   const monthKeys = useMemo(() => {
-    const keys = new Set([getCurrentMonth(), selectedMonth]);
-    expenses.forEach((expense) => {
-      const date = new Date(expense.date);
-      if (!Number.isNaN(date.getTime())) keys.add(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`);
-    });
-    return [...keys].sort((a, b) => b.localeCompare(a));
-  }, [expenses, selectedMonth]);
+    return [...new Set([getCurrentMonth(), selectedMonth, ...availableMonths])].sort((a, b) => b.localeCompare(a));
+  }, [availableMonths, selectedMonth]);
 
-  const monthExpenses = useMemo(() => expenses
-    .filter((expense) => {
-      const date = new Date(expense.date);
-      return !Number.isNaN(date.getTime()) && `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}` === selectedMonth;
-    })
-    .sort((a, b) => new Date(b.date) - new Date(a.date)), [expenses, selectedMonth]);
-  const monthTotal = monthExpenses.reduce((total, expense) => total + Number(expense.amount || 0), 0);
-  const expensePageCount = Math.ceil(monthExpenses.length / 5);
+  const monthExpenses = expenses;
+  const monthTotal = monthTotals.length === 1
+    ? formatMoney(monthTotals[0].amount, monthTotals[0].currency)
+    : monthTotals.map((item) => formatMoney(item.amount, item.currency)).join(" · ") || formatMoney(0);
   const visibleExpensePage = Math.min(expensePage, Math.max(expensePageCount, 1));
-  const visibleMonthExpenses = monthExpenses.slice((visibleExpensePage - 1) * 5, visibleExpensePage * 5);
-  const expensesByDate = visibleMonthExpenses.reduce((groups, expense) => {
+  const expensesByDate = monthExpenses.reduce((groups, expense) => {
     const dateKey = new Date(expense.date).toISOString().slice(0, 10);
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(expense);
     return groups;
   }, {});
 
-  const formatMoney = (amount, activeCurrency = currency) => {
+  function formatMoney(amount, activeCurrency = currency) {
     try {
       return new Intl.NumberFormat(undefined, { style: "currency", currency: activeCurrency }).format(Number(amount || 0));
     } catch {
       return `${activeCurrency} ${Number(amount || 0).toFixed(2)}`;
     }
-  };
+  }
   const formatMonth = (monthKey, options = { month: "long", year: "numeric" }) =>
     new Intl.DateTimeFormat(undefined, { ...options, timeZone: "UTC" }).format(new Date(`${monthKey}-01T00:00:00.000Z`));
 
@@ -141,7 +140,7 @@ const ExpenseTracker = () => {
       setExpensePage(1);
       setFormOpen(false);
       setEditingExpense(null);
-      await fetchExpenses();
+      await fetchExpenses(form.date.slice(0, 7), 1);
     } catch (requestError) {
       toast.error(requestError.response?.data?.error || "Could not save this expense");
     } finally {
@@ -155,8 +154,9 @@ const ExpenseTracker = () => {
       await axios.delete(`${BASE_URL}/api/user/personal-expenses/${expense._id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      setExpenses((current) => current.filter((item) => item._id !== expense._id));
-      setExpensePage(1);
+      const nextPage = expenses.length === 1 && expensePage > 1 ? expensePage - 1 : expensePage;
+      if (nextPage !== expensePage) setExpensePage(nextPage);
+      await fetchExpenses(selectedMonth, nextPage);
       toast.success("Personal expense deleted");
     } catch (requestError) {
       toast.error(requestError.response?.data?.error || "Could not delete this expense");
@@ -193,7 +193,7 @@ const ExpenseTracker = () => {
                 <MonthTitle>{formatMonth(selectedMonth)}</MonthTitle>
                 <p>{monthExpenses.length} {monthExpenses.length === 1 ? "expense" : "expenses"} in this month</p>
               </div>
-              <MonthTotal>{formatMoney(monthTotal)}<span>MONTH TOTAL</span></MonthTotal>
+              <MonthTotal>{monthTotal}<span>MONTH TOTAL · {expenseTotal} EXPENSES</span></MonthTotal>
               <AddButton type="button" onClick={formOpen ? () => setFormOpen(false) : openAddForm}>
                 {formOpen ? <FaTimes /> : <FaPlus />}{formOpen ? "Close" : "Add expense"}
               </AddButton>
@@ -286,7 +286,7 @@ const ExpenseTracker = () => {
             {!loading && !error && expensePageCount > 1 && (
               <TablePagination aria-label="Personal expense pages">
                 <PageControl type="button" onClick={() => setExpensePage(visibleExpensePage - 1)} disabled={visibleExpensePage === 1}>Previous</PageControl>
-                <PageInfo>Page {visibleExpensePage} of {expensePageCount} · {monthExpenses.length} expenses</PageInfo>
+                <PageInfo>Page {visibleExpensePage} of {expensePageCount} · {expenseTotal} expenses</PageInfo>
                 <PageControl type="button" onClick={() => setExpensePage(visibleExpensePage + 1)} disabled={visibleExpensePage === expensePageCount}>Next</PageControl>
               </TablePagination>
             )}
