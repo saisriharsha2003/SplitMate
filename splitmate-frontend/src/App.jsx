@@ -9,6 +9,8 @@ import Groups from "./components/Groups/Groups";
 import NewGroup from "./components/Groups/NewGroup";
 import ViewGroup from "./components/Groups/ViewGroup";
 import AddExpense from "./components/Expenses/AddExpense";
+import ExpenseDetails from "./components/Expenses/ExpenseDetails";
+import EditProfile from "./components/Profile/EditProfile";
 import { ToastContainer } from "react-toastify";
 
 import "./index.css";
@@ -21,10 +23,13 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
         <Route path="/groups" element={<Groups />} />
         <Route path="/groups/new" element={<NewGroup />} />
         <Route path="/groups/:id" element={<ViewGroup />} />
         <Route path="/groups/:id/expense/new" element={<AddExpense />} />
+        <Route path="/groups/:id/expenses/:expenseId" element={<ExpenseDetails />} />
+        <Route path="/groups/:id/expenses/:expenseId/edit" element={<AddExpense isEdit />} />
       </Routes>
       <ToastContainer />
     </>
