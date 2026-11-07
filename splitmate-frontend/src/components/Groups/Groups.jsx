@@ -13,15 +13,22 @@ import {
   GroupMembers,
   Actions,
   ActionButton,
+  EmptyState,
+  EmptyStateIcon,
+  HeaderActions,
+  LoadingState,
 } from "./GroupsStyle";
 import {
   FaEye,
   FaHandHoldingUsd,
   FaPlus,
   FaShareAlt,
+  FaTrash,
   FaUserPlus,
+  FaUsers,
 } from "react-icons/fa";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { BASE_URL } from "../config";
 
 import JoinGroupModal from "./JoinGroupModal";
@@ -43,8 +50,9 @@ const Groups = () => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/user/groups`);
-        console.log("Fetched groups:", res.data);
+        const res = await axios.get(`${BASE_URL}/api/user/groups`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
         setGroups(res.data || []);
       } catch (err) {
         console.error("❌ Error fetching groups:", err.message);
@@ -65,6 +73,23 @@ const Groups = () => {
   const openJoinModal = () => setJoinModalOpen(true);
   const closeJoinModal = () => setJoinModalOpen(false);
 
+  const handleDeleteGroup = async (group) => {
+    const confirmed = window.confirm(
+      `Delete "${group.name}" and all its expenses? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`${BASE_URL}/api/user/groups/${group._id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      toast.success("Group deleted successfully");
+      refreshGroups();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Could not delete group");
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Nav toggleSidebar={() => setIsSidebarOpen((p) => !p)} />
@@ -80,16 +105,33 @@ const Groups = () => {
           }}
         >
           <Header>
-            <h1>Groups</h1>
-            <AddButton onClick={() => navigate("/groups/new")}>
-              <FaPlus /> Add New Group
-            </AddButton>
+            <div>
+              <h1>Your groups</h1>
+              <p>Keep shared plans and expenses organized in one place.</p>
+            </div>
+            <HeaderActions>
+              <AddButton onClick={openJoinModal}>
+                <FaUserPlus /> Join Group
+              </AddButton>
+              <AddButton $primary onClick={() => navigate("/groups/new")}>
+                <FaPlus /> Add New Group
+              </AddButton>
+            </HeaderActions>
           </Header>
 
           {loading ? (
-            <p>Loading groups...</p>
+            <LoadingState>Loading your groups...</LoadingState>
           ) : groups.length === 0 ? (
-            <p>No groups found. Start by creating one!</p>
+            <EmptyState>
+              <EmptyStateIcon>
+                <FaUsers />
+              </EmptyStateIcon>
+              <h2>No groups yet</h2>
+              <p>
+                You’re not part of any groups right now. Create a group or join
+                one with an invite to start sharing expenses.
+              </p>
+            </EmptyState>
           ) : (
             <GroupsList>
               {groups.map((group) => (
@@ -110,19 +152,25 @@ const Groups = () => {
                     <ActionButton title="Settle Up">
                       <FaHandHoldingUsd />
                     </ActionButton>
-                    {group.createdBy?.username === username ||
-                    group.members?.some(
-                      (m) => m.user?.username === username
-                    ) ? (
+                    {group.members?.some((m) => m.user?.username === username) && (
                       <ActionButton
                         title="Share Invite"
                         onClick={() => openInviteModal(group.joinCode)}
                       >
                         <FaShareAlt />
                       </ActionButton>
-                    ) : (
-                      <ActionButton title="Join Group" onClick={openJoinModal}>
-                        <FaUserPlus />
+                    )}
+                    {(group.members?.some(
+                      (member) =>
+                        member.user?.username === username &&
+                        member.role === "admin"
+                    ) || group.createdBy?.username === username) && (
+                      <ActionButton
+                        title="Delete Group"
+                        aria-label={`Delete ${group.name}`}
+                        onClick={() => handleDeleteGroup(group)}
+                      >
+                        <FaTrash />
                       </ActionButton>
                     )}
                   </Actions>
