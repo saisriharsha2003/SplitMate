@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import ExpenseSchema from "./Expense.js";
 
 const groupSchema = new mongoose.Schema(
   {
@@ -14,7 +13,6 @@ const groupSchema = new mongoose.Schema(
         role: { type: String, enum: ["admin", "member"], default: "member" },
       },
     ],
-    expenses: [ExpenseSchema], 
     isActive: { type: Boolean, default: true },
     joinCode: { type: String, required: true, unique: true }, 
   },
