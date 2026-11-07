@@ -53,10 +53,11 @@ const Login = () => {
 
       toast.success(response.data.message, { autoClose: 1500 });
       if (response.status === 200) {
-        const { name, username } = response.data;
+        const { name, username, token } = response.data;
 
         localStorage.setItem("name", name);
         localStorage.setItem("username", username);
+        localStorage.setItem("token", token);
 
         toast.success("Redirecting to Home...", {
           position: "top-right",

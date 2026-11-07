@@ -16,8 +16,8 @@ export const AuthContainer = styled.div`
   display: flex;
   width: 900px;
   height: 550px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(150px);
+  background: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(70px);
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
@@ -55,7 +55,7 @@ export const FormSection = styled.div`
 export const Title = styled.h2`
   font-size: 2rem;
   margin-bottom: 20px;
-  color: #00e6e6;
+  color: #FBCC13;
   display: flex;
   justify-content: center;
   text-align: center;
@@ -73,7 +73,7 @@ export const InputGroup = styled.div`
   padding: 10px 12px;
 
   .icon {
-    color: #00e6e6;
+    color: #FBCC13;
     font-size: 1.1rem;
     margin-right: 10px;
     flex-shrink: 0;
@@ -114,8 +114,13 @@ export const Input = styled.input`
   background: transparent;
   color: #fff;
 
+  &::placeholder {
+    color: #fff;
+    opacity: 1;
+  }
+
   &:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+    -webkit-box-shadow: 0 0 0px 1000px inset !important;
     -webkit-text-fill-color: #fff !important;
     caret-color: #fff !important;
     transition: background-color 9999s ease-in-out 0s;
@@ -131,7 +136,7 @@ export const Input = styled.input`
 export const Button = styled.button`
   width: 100%;
   padding: 12px;
-  background: linear-gradient(90deg, #00e6e6, #00b3b3);
+  background: linear-gradient(90deg, #FBCC13, #00b3b3);
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -144,7 +149,7 @@ export const Button = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    background: linear-gradient(90deg, #00b3b3, #00e6e6);
+    background: linear-gradient(90deg, #00b3b3, #FBCC13);
   }
 `;
 
@@ -155,7 +160,7 @@ export const SwitchText = styled.p`
   color: #ddd;
 
   a {
-    color: #00e6e6;
+    color: #FBCC13;
     font-weight: bold;
     text-decoration: none;
     transition: 0.3s;

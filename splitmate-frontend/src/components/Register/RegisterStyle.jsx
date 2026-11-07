@@ -55,7 +55,7 @@ export const FormSection = styled.div`
 export const Title = styled.h2`
   font-size: 2rem;
   margin-bottom: 20px;
-  color: #00e6e6;
+  color: #FBCC13;
   display: flex;
   justify-content: center;
   text-align: center;
@@ -72,7 +72,7 @@ export const InputGroup = styled.div`
   padding: 0 12px;
 
   .icon {
-    color: #00e6e6;
+    color: #FBCC13;
     font-size: 1.1rem;
     margin-right: 10px;
   }
@@ -99,6 +99,11 @@ export const Input = styled.input`
   background: transparent;
   color: #fff;
 
+  &::placeholder {
+    color: #fff;
+    opacity: 1;
+  }
+    
   &:-webkit-autofill {
     -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
     -webkit-text-fill-color: #fff !important;
@@ -116,7 +121,7 @@ export const Input = styled.input`
 export const Button = styled.button`
   width: 100%;
   padding: 12px;
-  background: linear-gradient(90deg, #00e6e6, #00b3b3);
+  background: linear-gradient(90deg, #FBCC13, #00b3b3);
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -129,7 +134,7 @@ export const Button = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    background: linear-gradient(90deg, #00b3b3, #00e6e6);
+    background: linear-gradient(90deg, #00b3b3, #FBCC13);
   }
 `;
 
@@ -140,7 +145,7 @@ export const SwitchText = styled.p`
   color: #ddd;
 
   a {
-    color: #00e6e6;
+    color: #FBCC13;
     font-weight: bold;
     text-decoration: none;
     transition: 0.3s;
@@ -195,7 +200,7 @@ export const CurrencySelect = styled(CreatableSelect).attrs({
 \    }
 
     &--is-selected {
-      background: #00e6e6;
+      background: #FBCC13;
       color: #fff;
     }
   }
@@ -205,7 +210,7 @@ export const CurrencySelect = styled(CreatableSelect).attrs({
   }
 
   .react-select__dropdown-indicator {
-    color: #00e6e6;
+    color: #FBCC13;
 
     &:hover {
       color: white;

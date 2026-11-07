@@ -34,11 +34,11 @@ const typing = keyframes`
 
 const blinkCaret = keyframes`
   from, to { border-color: transparent }
-  50% { border-color: #00e6e6  }
+  50% { border-color: #FBCC13  }
 `;
 
 export const Homep = styled.p`
-  color: #00e6e6;
+  color: #FBCC13;
   overflow: hidden;
   border-right: 2px solid white;
   white-space: nowrap;
@@ -89,7 +89,7 @@ export const Title = styled.h1`
   text-shadow: 0px 4px 12px rgba(0, 0, 0, 0.6);
 
   span {
-    color: #00e6e6;
+    color: #FBCC13;
     text-shadow: 0px 4px 12px rgba(0, 0, 0, 0.6);
   }
 `;
@@ -106,7 +106,7 @@ export const Subtitle = styled.p`
 `;
 
 export const CTAButton = styled.a`
-  background-color: #00e6e6;
+  background-color: #FBCC13;
   color: #000;
   font-weight: bold;
   padding: 14px 36px;
@@ -146,7 +146,7 @@ export const FeatureText = styled.div`
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 15px;
-    color: #00e6e6;
+    color: #FBCC13;
   }
 
   p {
