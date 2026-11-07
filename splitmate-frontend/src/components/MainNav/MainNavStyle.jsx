@@ -29,7 +29,7 @@ export const NavWrapper = styled.nav`
 export const NavLogo = styled.h2`
   font-size: 1.6rem;
   font-weight: bold;
-  color: #00f2fe;
+  color: #FBD12D;
   cursor: pointer;
   transition: transform 0.3s ease;
 
@@ -56,7 +56,7 @@ export const NavItem = styled.a`
   transition: color 0.3s ease;
 
   &:hover {
-    color: #00f2fe;
+    color: #FBD12D;
   }
 
   &::after {
@@ -66,7 +66,7 @@ export const NavItem = styled.a`
     bottom: -2px; 
     width: 0%;
     height: 2px;
-    background: #00f2fe;
+    background: #FBD12D;
     transition: width 0.3s ease;
   }
 

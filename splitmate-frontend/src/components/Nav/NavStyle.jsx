@@ -11,7 +11,7 @@ export const NavWrapper = styled.nav`
   justify-content: space-between;
   padding: 8px 24px;
   background-color: #121212;
-  box-shadow: 0px 0px 15px #00e6e6;
+  box-shadow: 0px 0px 15px #FBCC13;
   z-index: 2200; 
   color: white;
 `;
@@ -19,7 +19,7 @@ export const NavWrapper = styled.nav`
 export const Logo = styled.h2`
   font-size: 1.4rem;
   font-weight: 800;
-  color: #00e6e6;
+  color: #FBCC13;
   cursor: pointer;
   user-select: none;
 `;
