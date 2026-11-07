@@ -209,6 +209,7 @@ export const MenuBar = styled.button`
 `;
 
 export const IconButton = styled.button`
+  position: relative;
   background: rgba(255, 255, 255, 0.05);
   border: none;
   border-radius: 50%;
@@ -223,4 +224,37 @@ export const IconButton = styled.button`
   transition: all 0.3s ease;
   &:hover { transform: scale(1.1); }
   &:active { transform: scale(0.95); }
+`;
+
+export const NotificationPanel = styled.div`
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 72px;
+  z-index: 2300;
+  width: min(360px, calc(100vw - 24px));
+  max-height: 420px;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #272829, #151617);
+  color: #eee;
+  box-shadow: 0 20px 50px rgba(0,0,0,.55);
+  h3 { margin: 2px 4px 10px; color: #fbcc13; font-size: .95rem; }
+  @media (max-width: 420px) { right: 8px; }
+`;
+
+export const NotificationItem = styled.button`
+  display: block;
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  border-radius: 9px;
+  color: #e8e8e8;
+  background: ${({ $unread }) => ($unread ? "rgba(251,204,19,.09)" : "transparent")};
+  text-align: left;
+  cursor: pointer;
+  &:hover { background: rgba(251,204,19,.14); }
+  span { display: block; font-size: .85rem; line-height: 1.4; }
+  small { display: block; margin-top: 5px; color: #a5a9ac; }
 `;

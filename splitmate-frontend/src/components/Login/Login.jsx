@@ -119,6 +119,10 @@ const Login = () => {
                 </span>
               </InputGroup>
 
+              <div style={{ textAlign: "right", margin: "2px 0 8px" }}>
+                <Link to="/forgot-password" style={{ color: "#fbcc13", fontSize: ".86rem" }}>Forgot password?</Link>
+              </div>
+
               <MotionButton whileHover={{ scale: 1.1 }} type="submit">
                 {loading ? "Logging in..." : "Login"}
               </MotionButton>
