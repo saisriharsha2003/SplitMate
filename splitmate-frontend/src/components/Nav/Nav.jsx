@@ -8,6 +8,7 @@ import {
   SubMenuWrap,
   SubMenu,
   UserInfo,
+  AccountLabel,
   SubMenuLink,
   ExtArrow,
   RightMenu,
@@ -71,14 +72,28 @@ const Nav = ({ toggleSidebar }) => {
         <UserPic
           src={user}
           alt="User avatar"
+          role="button"
+          tabIndex={0}
+          aria-haspopup="menu"
+          aria-expanded={openMenu}
           onClick={() => setOpenMenu((p) => !p)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setOpenMenu((open) => !open);
+            }
+            if (event.key === "Escape") setOpenMenu(false);
+          }}
         />
 
-        <SubMenuWrap open={openMenu}>
+          <SubMenuWrap $open={openMenu} aria-hidden={!openMenu}>
           <SubMenu>
             <UserInfo>
-              <img src={user} alt="User" style={{ width: 80, height: 80 }} />
-              <h2>{userName || "User"}</h2>
+              <img src={user} alt="" />
+              <div>
+                <h2>{userName || "User"}</h2>
+                <AccountLabel>Account settings</AccountLabel>
+              </div>
             </UserInfo>
             <hr />
 
