@@ -4,6 +4,8 @@ import Group from "../models/Groups.js";
 import Expense from "../models/Expense.js";
 import GroupActivity from "../models/GroupActivity.js";
 import PersonalExpense from "../models/PersonalExpense.js";
+import Notification from "../models/Notification.js";
+import Settlement from "../models/Settlement.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -13,8 +15,72 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 dotenv.config();
 
-const recordGroupActivity = (groupId, actor, action, message, details = {}) =>
-  GroupActivity.create({ groupId, actor, action, message, details });
+const recordGroupActivity = async (groupId, actor, action, message, details = {}) => {
+  const activity = await GroupActivity.create({ groupId, actor, action, message, details });
+  try {
+    const group = await Group.findById(groupId).select("members");
+    const recipients = (group?.members || [])
+      .map((member) => member.user.toString())
+      .filter((userId) => userId !== String(actor));
+    if (recipients.length) {
+      await Notification.insertMany(recipients.map((recipient) => ({
+        recipient, actor, groupId, message,
+      })));
+    }
+  } catch (error) {
+    console.error("Could not create group notifications:", error.message);
+  }
+  return activity;
+};
+
+const getGroupDebtDetails = async (groupId, members) => {
+  const memberNames = new Map(members.map((member) => [
+    String(member.user?._id || member.user),
+    member.user?.name || "Unknown member",
+  ]));
+  const pairCents = new Map();
+  const addPairBalance = (debtorId, creditorId, cents) => {
+    if (debtorId === creditorId || !memberNames.has(debtorId) || !memberNames.has(creditorId) || !cents) return;
+    const [firstId, secondId] = [debtorId, creditorId].sort();
+    const key = `${firstId}:${secondId}`;
+    pairCents.set(key, (pairCents.get(key) || 0) + (debtorId === firstId ? cents : -cents));
+  };
+  const [expenses, settlements] = await Promise.all([
+    Expense.find({ groupId }).select("amount paidBy splitAmong"),
+    Settlement.find({ groupId }).select("payer payee amount"),
+  ]);
+  for (const expense of expenses) {
+    const payerId = String(expense.paidBy);
+    for (const split of expense.splitAmong || []) {
+      const debtorId = String(split.user);
+      if (debtorId !== payerId) {
+        addPairBalance(debtorId, payerId, Math.round(Number(split.shareAmount ?? (expense.amount / expense.splitAmong.length)) * 100));
+      }
+    }
+  }
+  for (const settlement of settlements) {
+    const payerId = String(settlement.payer);
+    const payeeId = String(settlement.payee);
+    const amountCents = Math.round(Number(settlement.amount) * 100);
+    addPairBalance(payeeId, payerId, amountCents);
+  }
+  const debts = [...pairCents.entries()]
+    .filter(([, balance]) => balance !== 0)
+    .map(([key, balance]) => {
+      const [firstId, secondId] = key.split(":");
+      const debtorId = balance > 0 ? firstId : secondId;
+      const creditorId = balance > 0 ? secondId : firstId;
+      return {
+        debtorId,
+        debtorName: memberNames.get(debtorId),
+        creditorId,
+        creditorName: memberNames.get(creditorId),
+        amount: Math.abs(balance) / 100,
+      };
+    })
+    .sort((a, b) => b.amount - a.amount || a.debtorName.localeCompare(b.debtorName));
+  return debts;
+};
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -121,32 +187,34 @@ async function sendResetEmail(email, resetCode) {
 }
 
 export const resetPassword = async (req, res) => {
-  const { email } = req.body;
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: "User not found" });
+    if (!user) return res.json({ message: "If an account exists for that email, a verification code has been sent." });
 
     const resetCode = crypto.randomInt(100000, 999999).toString();
     const hashedCode = await bcrypt.hash(resetCode, 10);
 
     user.resetPasswordCode = hashedCode;
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    user.passwordResetTokenHash = null;
+    user.passwordResetTokenExpires = null;
     await user.save();
 
     await sendResetEmail(email, resetCode);
 
     res.json({ message: "Verification code sent to email" });
   } catch (error) {
-    console.log(error);
+    console.error("Error requesting password reset:", error);
     res.status(500).json({ error: "Verification code not sent" });
   }
 };
 
 export const verifyCode = async (req, res) => {
-  const { reset_email, code } = req.body;
-  console.log(reset_email);
-  console.log(code);
+  const reset_email = typeof req.body.reset_email === "string" ? req.body.reset_email.trim().toLowerCase() : "";
+  const code = typeof req.body.code === "string" ? req.body.code.trim() : "";
   try {
+    if (!reset_email || !/^\d{6}$/.test(code)) return res.status(400).json({ error: "Enter a valid email and 6-digit verification code" });
     const user = await User.findOne({ email: reset_email });
     if (!user || !user.resetPasswordCode)
       return res.status(400).json({ error: "Invalid request" });
@@ -156,21 +224,35 @@ export const verifyCode = async (req, res) => {
       return res.status(400).json({ error: "Invalid or expired code" });
     }
 
-    res.json({ message: "Code verified, proceeding to update password" });
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.passwordResetTokenHash = await bcrypt.hash(resetToken, 10);
+    user.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+    res.json({ message: "Code verified", resetToken });
   } catch (error) {
     res.status(500).json({ error: "Error verifying code" });
   }
 };
 
 export const newPassword = async (req, res) => {
-  const { reset_email, newPassword } = req.body;
+  const reset_email = typeof req.body.reset_email === "string" ? req.body.reset_email.trim().toLowerCase() : "";
+  const { newPassword, resetToken } = req.body;
   try {
+    if (typeof reset_email !== "string" || typeof newPassword !== "string" || newPassword.length < 6 || typeof resetToken !== "string") {
+      return res.status(400).json({ error: "A valid reset token and a password of at least 6 characters are required" });
+    }
     const user = await User.findOne({ email: reset_email });
-    if (!user) return res.status(400).json({ error: "User not found" });
+    if (!user || !user.passwordResetTokenHash || !user.passwordResetTokenExpires || Date.now() > user.passwordResetTokenExpires.getTime()) {
+      return res.status(400).json({ error: "Reset session is invalid or expired. Request a new code." });
+    }
+    const tokenMatches = await bcrypt.compare(resetToken, user.passwordResetTokenHash);
+    if (!tokenMatches) return res.status(400).json({ error: "Reset session is invalid or expired" });
 
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetPasswordCode = undefined;
     user.resetPasswordExpires = undefined;
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetTokenExpires = undefined;
     await user.save();
 
     res.json({ message: "Password reset successful" });
@@ -270,11 +352,30 @@ const parsePersonalExpense = (body) => {
 
 export const getPersonalExpenses = async (req, res) => {
   try {
-    const [expenses, user] = await Promise.all([
-      PersonalExpense.find({ owner: req.user.userId }).sort({ date: -1, createdAt: -1 }),
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 5));
+    const filter = { owner: req.user.userId };
+    if (req.query.month && /^\d{4}-\d{2}$/.test(req.query.month)) {
+      const [year, month] = req.query.month.split("-").map(Number);
+      const start = new Date(Date.UTC(year, month - 1, 1));
+      const end = new Date(Date.UTC(year, month, 1));
+      filter.date = { $gte: start, $lt: end };
+    }
+    const [expenses, user, monthTotals] = await Promise.all([
+      PersonalExpense.find(filter).sort({ date: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit),
       User.findById(req.user.userId).select("default_currency"),
+      PersonalExpense.aggregate([
+        { $match: { ...filter, owner: new mongoose.Types.ObjectId(req.user.userId) } },
+        { $group: { _id: "$currency", amount: { $sum: "$amount" } } },
+      ]),
     ]);
-    return res.json({ expenses, currency: user?.default_currency || "INR" });
+    const total = await PersonalExpense.countDocuments(filter);
+    const monthList = await PersonalExpense.aggregate([
+      { $match: { owner: new mongoose.Types.ObjectId(req.user.userId) } },
+      { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$date", timezone: "UTC" } } } },
+      { $sort: { _id: -1 } },
+    ]);
+    return res.json({ expenses, currency: user?.default_currency || "INR", total, page, pages: Math.ceil(total / limit), limit, months: monthList.map((item) => item._id), monthTotals: monthTotals.map((item) => ({ currency: item._id || "INR", amount: item.amount })) });
   } catch (error) {
     console.error("Error fetching personal expenses:", error);
     return res.status(500).json({ error: "Could not load personal expenses" });
@@ -410,16 +511,31 @@ export const getGroupById = async (req, res) => {
       return res.status(403).json({ error: "You are not a member of this group" });
     }
 
-    const expenses = await Expense.find({ groupId: group._id })
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const activityPage = Math.max(1, Number.parseInt(req.query.activityPage, 10) || 1);
+    const debtPage = Math.max(1, Number.parseInt(req.query.debtPage, 10) || 1);
+    const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 5));
+    const activityLimit = Math.min(50, Math.max(1, Number.parseInt(req.query.activityLimit, 10) || 5));
+    const debtLimit = Math.min(50, Math.max(1, Number.parseInt(req.query.debtLimit, 10) || 5));
+    const expenseFilter = { groupId: group._id };
+    const [expenses, expenseTotal, debts] = await Promise.all([
+      Expense.find(expenseFilter)
       .populate("paidBy", "name username email")
       .populate("createdBy", "name username email")
       .populate("lastUpdatedBy", "name username email")
       .populate("splitAmong.user", "name username email")
-      .sort({ date: -1, createdAt: -1 });
-    const activityRecords = await GroupActivity.find({ groupId: group._id })
-      .populate("actor", "name username")
-      .sort({ createdAt: -1 })
-      .limit(100);
+      .sort({ date: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      Expense.countDocuments(expenseFilter),
+      getGroupDebtDetails(group._id, group.members),
+    ]);
+    const [activityRecords, activityTotal] = await Promise.all([
+      GroupActivity.find({ groupId: group._id })
+        .populate("actor", "name username")
+        .sort({ createdAt: -1 })
+        .skip((activityPage - 1) * activityLimit)
+        .limit(activityLimit),
+      GroupActivity.countDocuments({ groupId: group._id }),
+    ]);
     const activity = activityRecords.map((record) => record.toObject());
     const legacySplitIds = [...new Set(activity.flatMap((item) => {
       if (item.details?.splitBreakdown?.length) return [];
@@ -443,45 +559,107 @@ export const getGroupById = async (req, res) => {
       });
     });
 
-    let youOwe = 0;
-    let owedToYou = 0;
-
-    expenses.forEach((exp) => {
-      const paidBy = exp.paidBy?._id?.toString();
-      const currentUser = userId.toString();
-      const userSplit = exp.splitAmong.find(
-        (split) => split.user?._id?.toString() === currentUser || split.user?.toString() === currentUser
-      );
-      const userShare = userSplit
-        ? userSplit.shareAmount ?? exp.amount / exp.splitAmong.length
-        : 0;
-
-      if (paidBy === currentUser) {
-        owedToYou += exp.amount - userShare;
-      } else {
-        youOwe += userShare;
-      }
-    });
-
+    const userDebts = debts.filter((debt) => debt.debtorId === userId.toString() || debt.creditorId === userId.toString());
     const result = {
       _id: group._id,
+      currentUserId: userId.toString(),
       name: group.name,
       createdBy: group.createdBy,
       members: group.members,
       activity,
+      debts: userDebts.slice((debtPage - 1) * debtLimit, debtPage * debtLimit),
+      myDebts: debts.filter((debt) => debt.debtorId === userId.toString()),
+      myDebtsToMe: debts.filter((debt) => debt.creditorId === userId.toString()),
       currency: group.currency,
       joinCode: group.joinCode,
       expenses,
-      summary: {
-        youOwe,
-        owedToYou,
-      },
+      expensePagination: { page, pages: Math.ceil(expenseTotal / limit), total: expenseTotal, limit },
+      activityPagination: { page: activityPage, pages: Math.ceil(activityTotal / activityLimit), total: activityTotal, limit: activityLimit },
+      debtPagination: { page: debtPage, pages: Math.ceil(userDebts.length / debtLimit), total: userDebts.length, limit: debtLimit },
     };
 
     res.json(result);
   } catch (err) {
     console.error("❌ Error in getGroupById:", err.message);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const recordSettlement = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { note = "" } = req.body;
+    const payments = Array.isArray(req.body.payments)
+      ? req.body.payments
+      : [{ payeeId: req.body.payeeId, amount: req.body.amount }];
+    const payerId = String(req.user.userId);
+    if (!mongoose.isValidObjectId(groupId) || !Array.isArray(payments) || payments.length < 1 || payments.length > 100) return res.status(400).json({ error: "Choose at least one valid group payment" });
+    if (typeof note !== "string" || note.trim().length > 240) return res.status(400).json({ error: "Payment note must be 240 characters or fewer" });
+    const group = await Group.findById(groupId).populate("members.user", "name username");
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    const memberIds = group.members.map((member) => String(member.user?._id || member.user));
+    if (!memberIds.includes(payerId)) return res.status(403).json({ error: "You are not a member of this group" });
+    const debts = await getGroupDebtDetails(group._id, group.members);
+    const myDebts = debts.filter((debt) => debt.debtorId === payerId);
+    if (!myDebts.length) return res.status(400).json({ error: "You do not have an outstanding amount to settle" });
+    const normalizedPayments = [];
+    const seenPayees = new Set();
+    for (const payment of payments) {
+      const payeeId = String(payment?.payeeId || "");
+      const amount = Number(payment?.amount);
+      if (!mongoose.isValidObjectId(payeeId) || payeeId === payerId || !memberIds.includes(payeeId) || seenPayees.has(payeeId)) {
+        return res.status(400).json({ error: "Choose a valid, unique group member for each payment" });
+      }
+      if (!Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) !== amount * 100) {
+        return res.status(400).json({ error: "Enter valid payment amounts with up to two decimal places" });
+      }
+      const directDebt = myDebts.find((debt) => debt.creditorId === payeeId);
+      if (!directDebt || amount > directDebt.amount + 0.001) {
+        return res.status(400).json({ error: "A payment cannot exceed the amount you owe that member" });
+      }
+      seenPayees.add(payeeId);
+      normalizedPayments.push({ payeeId, amount: Math.round(amount * 100) / 100 });
+    }
+    const totalPayment = Math.round(normalizedPayments.reduce((sum, payment) => sum + payment.amount, 0) * 100) / 100;
+    const totalOwed = myDebts.reduce((sum, debt) => sum + debt.amount, 0);
+    if (totalPayment > totalOwed + 0.001) {
+      return res.status(400).json({ error: `Total payment cannot exceed your outstanding amount of ${group.currency || "INR"} ${totalOwed.toFixed(2)}` });
+    }
+    const records = await Settlement.insertMany(normalizedPayments.map((payment) => ({
+      groupId: group._id,
+      payer: payerId,
+      payee: payment.payeeId,
+      amount: payment.amount,
+      currency: group.currency || "INR",
+      date: new Date(),
+      note: note.trim(),
+    })));
+    const payerName = group.members.find((member) => String(member.user?._id || member.user) === payerId)?.user?.name || "A member";
+    try {
+      for (const settlement of records) {
+        const payeeName = group.members.find((member) => String(member.user?._id || member.user) === String(settlement.payee))?.user?.name || "A member";
+        await recordGroupActivity(group._id, payerId, "settlement_recorded", `recorded a payment of ${group.currency || "INR"} ${settlement.amount.toFixed(2)} to ${payeeName}${note.trim() ? ` (${note.trim()})` : ""}`, {
+          settlementId: settlement._id,
+          payerId,
+          payerName,
+          payeeId: String(settlement.payee),
+          payeeName,
+          amount: settlement.amount,
+          currency: settlement.currency,
+          note: note.trim(),
+        });
+      }
+    } catch (error) {
+      await Promise.all([
+        Settlement.deleteMany({ _id: { $in: records.map((record) => record._id) } }),
+        GroupActivity.deleteMany({ "details.settlementId": { $in: records.map((record) => record._id) } }),
+      ]);
+      throw error;
+    }
+    return res.status(201).json({ message: `${records.length === 1 ? "Payment" : "Payments"} recorded`, settlementIds: records.map((record) => record._id) });
+  } catch (error) {
+    console.error("Error recording group settlement:", error);
+    return res.status(500).json({ error: "Could not record this payment" });
   }
 };
 
@@ -888,6 +1066,13 @@ export const removeGroupMember = async (req, res) => {
     }
     const targetMembership = group.members.find((entry) => entry.user?._id?.toString() === memberId || entry.user?.toString() === memberId);
     if (!targetMembership) return res.status(404).json({ error: "Member not found in this group" });
+    const hasFinancialHistory = await Promise.all([
+      Expense.exists({ groupId: group._id, $or: [{ paidBy: memberId }, { "splitAmong.user": memberId }] }),
+      Settlement.exists({ groupId: group._id, $or: [{ payer: memberId }, { payee: memberId }] }),
+    ]).then((results) => results.some(Boolean));
+    if (hasFinancialHistory) {
+      return res.status(409).json({ error: "This member is part of existing expense or payment history. Keep them in the group so past balances and records remain accessible." });
+    }
     const removedName = targetMembership.user?.name || "A member";
     group.members = group.members.filter((entry) => (entry.user?._id?.toString() || entry.user?.toString()) !== memberId);
     await group.save();
@@ -917,7 +1102,12 @@ export const deleteGroup = async (req, res) => {
       return res.status(403).json({ error: "Only group admins can delete this group" });
     }
 
-    await Expense.deleteMany({ groupId: group._id });
+    await Promise.all([
+      Expense.deleteMany({ groupId: group._id }),
+      Settlement.deleteMany({ groupId: group._id }),
+      GroupActivity.deleteMany({ groupId: group._id }),
+      Notification.deleteMany({ groupId: group._id }),
+    ]);
     await group.deleteOne();
     return res.status(200).json({ message: "Group deleted successfully" });
   } catch (err) {
@@ -927,17 +1117,13 @@ export const deleteGroup = async (req, res) => {
 };
 
 export const getNotifications = async (req, res) => {
-  console.log("Fetching notifications for user:", req.params.username);
-  const { username } = req.params;
   try {
-    const notifications = await Notification.find({
-      recipients: username,
-    }).sort({ createdAt: -1 });
-
-    const unseenCount = notifications.filter(
-      (n) => !n.seenBy.includes(username)
-    ).length;
-
+    const userId = req.user.userId;
+    const notifications = await Notification.find({ recipient: userId })
+      .populate("actor", "name")
+      .populate("groupId", "name")
+      .sort({ createdAt: -1 }).limit(20);
+    const unseenCount = await Notification.countDocuments({ recipient: userId, readAt: null });
     res.status(200).json({ notifications, unseenCount });
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -946,16 +1132,31 @@ export const getNotifications = async (req, res) => {
 };
 
 export const resetNotificationCount = async (req, res) => {
-  const { username } = req.params;
   try {
     await Notification.updateMany(
-      { recipients: username },
-      { $addToSet: { seenBy: username } }
+      { recipient: req.user.userId, readAt: null },
+      { $set: { readAt: new Date() } }
     );
     res.status(200).json({ message: "Notification count reset" });
   } catch (error) {
     console.error("Error resetting notifications:", error);
     res.status(500).json({ message: "Failed to reset notifications", error });
+  }
+};
+
+export const markNotificationRead = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.notificationId)) return res.status(400).json({ error: "Invalid notification ID" });
+    const notification = await Notification.findOneAndUpdate(
+      { _id: req.params.notificationId, recipient: req.user.userId },
+      { $set: { readAt: new Date() } },
+      { new: true },
+    );
+    if (!notification) return res.status(404).json({ error: "Notification not found" });
+    return res.json({ message: "Notification marked as read" });
+  } catch (error) {
+    console.error("Error updating notification:", error);
+    return res.status(500).json({ error: "Could not update notification" });
   }
 };
 

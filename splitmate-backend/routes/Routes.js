@@ -11,6 +11,7 @@ import {
   newPassword,
   getNotifications,
   resetNotificationCount,
+  markNotificationRead,
   createGroup,
   getUserGroups,
   getUserExpenses,
@@ -20,6 +21,7 @@ import {
   deletePersonalExpense,
   getDashboardMetrics,
   getGroupById,
+  recordSettlement,
   addGroupExpense,
   getGroupExpense,
   updateGroupExpense,
@@ -50,6 +52,7 @@ router.get('/expenses', verifyJWT, getUserExpenses);
 router.route('/personal-expenses').get(verifyJWT, getPersonalExpenses).post(verifyJWT, createPersonalExpense);
 router.route('/personal-expenses/:expenseId').put(verifyJWT, updatePersonalExpense).delete(verifyJWT, deletePersonalExpense);
 router.get("/groups/:id", verifyJWT, getGroupById);
+router.post("/groups/:groupId/settlements", verifyJWT, recordSettlement);
 router.post("/groups/:id/expenses", verifyJWT, addGroupExpense);
 router.get("/groups/:groupId/expenses/:expenseId", verifyJWT, getGroupExpense);
 router.put("/groups/:groupId/expenses/:expenseId", verifyJWT, updateGroupExpense);
@@ -59,7 +62,8 @@ router.delete("/groups/:groupId/members/:memberId", verifyJWT, removeGroupMember
 router.delete("/groups/:id", verifyJWT, deleteGroup);
 
 
-router.get('/notifications/:username', getNotifications);
-router.post('/notifications/reset/:username', resetNotificationCount);
+router.get('/notifications', verifyJWT, getNotifications);
+router.post('/notifications/read-all', verifyJWT, resetNotificationCount);
+router.patch('/notifications/:notificationId/read', verifyJWT, markNotificationRead);
 
 export default router;
