@@ -25,7 +25,7 @@ export const ModalBox = styled.div`
 
 export const ModalTitle = styled.h2`
   font-size: 22px;
-  color: #00e6e6;
+  color: #FBCC13;
   margin-bottom: 12px;
 `;
 
@@ -39,7 +39,7 @@ export const InviteCodeDisplay = styled.p`
 `;
 
 export const ModalButton = styled.button`
-  background: #00e6e6;
+  background: #FBCC13;
   border: none;
   padding: 10px;
   border-radius: 6px;
@@ -49,6 +49,6 @@ export const ModalButton = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #1ddbd1;
+    background: #FBD12D;
   }
 `;
