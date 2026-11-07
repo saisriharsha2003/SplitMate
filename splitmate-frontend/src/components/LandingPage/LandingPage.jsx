@@ -36,8 +36,7 @@ const LandingPage = () => {
             Welcome to <Homep>SplitMate</Homep>
           </Title>
           <Subtitle>
-            The easiest way to split bills, track expenses, and settle balances
-            with your groups.
+            Split bills, track shared expenses, and review group balances in one place.
           </Subtitle>
           <CTAButton href="/register">Get Started</CTAButton>
         </HeroSection>
@@ -75,19 +74,16 @@ const LandingPage = () => {
 
           <FeatureRow>
             <FeatureText>
-              <h2>Payment Tracking & Settlement</h2>
+              <h2>Clear Group Balances</h2>
               <p>
-                Easily keep track of who owes whom and how much. SplitMate
-                automatically calculates balances, records payments, and updates
-                settlements in real-time, ensuring that all group expenses are
-                transparent and everyone stays on the same page. Say goodbye to
-                awkward reminders and complicated calculations—settling up is
-                now simple and hassle-free.
+                Review each person’s share and see how group expenses affect
+                balances. SplitMate keeps expense history visible to everyone
+                in the group so shared costs stay clear.
               </p>
             </FeatureText>
             <FeatureImage
               src={payment_tracking}
-              alt="Payment Tracking & Settlement"
+              alt="Group expense balances"
             />
           </FeatureRow>
 
@@ -95,9 +91,9 @@ const LandingPage = () => {
             <FeatureText>
               <h2>Multi-Currency Support</h2>
               <p>
-                Record expenses in INR, USD, or any supported currency, and let
-                SplitMate handle the conversions automatically. Fair settlements
-                are always accurate, no matter where your group is spending.
+                Record expenses in INR, USD, EUR, or GBP. Each group keeps its
+                expenses in its selected currency, so amounts remain clear
+                without unexpected conversions.
               </p>
             </FeatureText>
             <FeatureImage src={multi_currency} alt="Currency support" />
@@ -105,12 +101,11 @@ const LandingPage = () => {
 
           <FeatureRow>
             <FeatureText>
-              <h2>Detailed Analytics</h2>
+              <h2>Spending Overview</h2>
               <p>
-                Get insights into spending patterns, settlements, and balances
-                with interactive charts that bring your finances to life.
-                Understand where your money goes, keep track of who owes what,
-                and make smarter decisions together.
+                Review monthly and all-time spending for your groups and personal
+                tracker in one dashboard. Totals stay separated by currency so
+                you can compare activity without mixing amounts.
               </p>
             </FeatureText>
             <FeatureImage src={analytics} alt="Analytics" />
@@ -118,12 +113,11 @@ const LandingPage = () => {
 
           <FeatureRow $reverse>
             <FeatureText>
-              <h2>Smart Notifications</h2>
+              <h2>Group Activity Notifications</h2>
               <p>
-                Stay on top of your group expenses with timely notifications.
-                Get real-time updates on spending patterns, outstanding
-                balances, and settlements. Make informed decisions together and
-                never miss a payment or due share again.
+                Get an in-app notification when a group member adds an expense,
+                changes a split, or joins the group. Open it to return to that
+                group’s activity and expense history.
               </p>
             </FeatureText>
             <FeatureImage src={notifications} alt="Smart Notifications" />
