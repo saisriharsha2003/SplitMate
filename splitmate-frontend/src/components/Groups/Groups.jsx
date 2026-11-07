@@ -9,6 +9,8 @@ import {
   GroupsList,
   GroupCard,
   GroupInfo,
+  GroupIdentity,
+  GroupIcon,
   GroupName,
   GroupMembers,
   Actions,
@@ -134,10 +136,13 @@ const Groups = () => {
             </EmptyState>
           ) : (
             <GroupsList>
-              {groups.map((group) => (
-                <GroupCard key={group._id}>
+              {groups.map((group, index) => (
+                <GroupCard key={group._id} $index={index}>
                   <GroupInfo>
-                    <GroupName>{group.name}</GroupName>
+                    <GroupIdentity>
+                      <GroupIcon className="group-icon" $variant={index % 3}><FaUsers /></GroupIcon>
+                      <GroupName>{group.name}</GroupName>
+                    </GroupIdentity>
                     <GroupMembers>
                       {group.members?.length || 0} members
                     </GroupMembers>

@@ -94,8 +94,8 @@ export const AddButton = styled.button`
 
 export const GroupsList = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 18px;
   padding-bottom: 24px;
 `;
 
@@ -160,27 +160,60 @@ export const LoadingState = styled.div`
 `;
 
 export const GroupCard = styled.article`
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-width: 0;
-  min-height: 120px;
+  min-height: 142px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.075);
-  border-radius: 15px;
-  background: linear-gradient(145deg, rgba(33, 34, 35, 0.94), rgba(23, 24, 25, 0.94));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  padding: 22px 22px 22px 25px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(37, 38, 39, 0.98), rgba(24, 25, 26, 0.98) 72%);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.035);
   animation: ${fadeUp} 420ms ease both;
-  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  animation-delay: ${(props) => `${Math.min(props.$index || 0, 8) * 55}ms`};
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 220ms ease, box-shadow 220ms ease, background 220ms ease;
 
-  &:nth-child(2) { animation-delay: 45ms; }
-  &:nth-child(3) { animation-delay: 90ms; }
-  &:nth-child(4) { animation-delay: 135ms; }
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    top: 18px;
+    bottom: 18px;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(180deg, #ffe77c, #d6ae08);
+    box-shadow: 0 0 16px rgba(251, 204, 19, 0.45);
+    transition: top 220ms ease, bottom 220ms ease, width 220ms ease;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: -70px;
+    bottom: -110px;
+    width: 230px;
+    height: 230px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(251, 204, 19, 0.105), transparent 68%);
+    opacity: 0.55;
+    transition: transform 260ms ease, opacity 220ms ease;
+  }
+
   &:hover {
-    transform: translateY(-3px);
-    border-color: rgba(251, 204, 19, 0.25);
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+    transform: translateY(-5px);
+    border-color: rgba(251, 204, 19, 0.32);
+    background: linear-gradient(135deg, rgba(42, 42, 40, 0.99), rgba(25, 26, 27, 0.99) 72%);
+    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.34), 0 0 26px rgba(251, 204, 19, 0.055), inset 0 1px rgba(255, 255, 255, 0.05);
+    &::before { top: 12px; bottom: 12px; width: 4px; }
+    &::after { transform: scale(1.18); opacity: 0.9; }
+    .group-icon { transform: rotate(-5deg) scale(1.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22); }
   }
 
   @media (max-width: 460px) {
@@ -192,24 +225,71 @@ export const GroupCard = styled.article`
 `;
 
 export const GroupInfo = styled.div`
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+`;
+
+export const GroupIdentity = styled.div`
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+`;
+
+export const GroupIcon = styled.span`
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid ${(props) => ["rgba(251, 204, 19, 0.22)", "rgba(115, 177, 255, 0.2)", "rgba(148, 211, 167, 0.18)"][props.$variant || 0]};
+  border-radius: 14px;
+  background: linear-gradient(145deg, ${(props) => ["rgba(251, 204, 19, 0.16)", "rgba(115, 177, 255, 0.12)", "rgba(148, 211, 167, 0.1)"][props.$variant || 0]}, rgba(255, 255, 255, 0.025));
+  color: ${(props) => ["#f4d453", "#9ac8ff", "#9bd4a8"][props.$variant || 0]};
+  font-size: 1.1rem;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.045), 0 6px 15px rgba(0, 0, 0, 0.15);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+
 `;
 
 export const GroupName = styled.span`
-  overflow: hidden;
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
   color: #fff;
+  overflow-wrap: anywhere;
   font-weight: 680;
   font-size: 1.08rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
 `;
 
 export const GroupMembers = styled.span`
-  color: #9da1a5;
-  font-size: 0.86rem;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #aeb3b6;
+  font-size: 0.76rem;
+  font-weight: 600;
+
+  &::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #a6c69a;
+    box-shadow: 0 0 8px rgba(166, 198, 154, 0.45);
+  }
 `;
 
 export const GroupBalance = styled.span`
@@ -218,6 +298,8 @@ export const GroupBalance = styled.span`
 `;
 
 export const Actions = styled.div`
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-shrink: 0;
   gap: 7px;
