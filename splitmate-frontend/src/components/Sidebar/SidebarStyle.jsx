@@ -25,6 +25,30 @@ export const SidebarWrapper = styled.div.withConfig({
     transition: none;
     will-change: auto;
   }
+
+  @media (max-width: 760px) {
+    top: 75px;
+    width: 240px;
+    height: calc(100dvh - 75px);
+    padding: 18px 10px;
+    z-index: 2101;
+    transform: translateX(${(props) => (props.isOpen ? "0" : "-105%")});
+    box-shadow: ${(props) => (props.isOpen ? "18px 0 40px rgba(0,0,0,.4)" : "none")};
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+`;
+
+export const SidebarBackdrop = styled.button`
+  display: none;
+  @media (max-width: 760px) {
+    display: block;
+    position: fixed;
+    inset: 75px 0 0;
+    z-index: 2100;
+    width: 100%;
+    border: 0;
+    background: rgba(0, 0, 0, 0.55);
+  }
 `;
 
 export const Logo = styled.div`

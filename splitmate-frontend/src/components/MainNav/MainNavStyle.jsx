@@ -24,6 +24,7 @@ export const NavWrapper = styled.nav`
   left: 0;
   right: 0;
   z-index: 1000;
+  @media (max-width: 520px) { padding: 0 16px; height: 68px; }
 `;
 
 export const NavLogo = styled.h2`
@@ -42,6 +43,7 @@ export const NavLinks = styled.div`
   display: flex;
   gap: 28px;
   align-items: center;
+  @media (max-width: 520px) { gap: 15px; }
 `;
 
 export const NavItem = styled.a`
@@ -54,6 +56,7 @@ export const NavItem = styled.a`
   padding: 4px 0;
   text-decoration: none;
   transition: color 0.3s ease;
+  @media (max-width: 520px) { font-size: 0.85rem; }
 
   &:hover {
     color: #FBD12D;

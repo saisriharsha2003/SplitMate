@@ -75,7 +75,7 @@ const ExpenseDetails = () => {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Nav toggleSidebar={() => setIsSidebarOpen((open) => !open)} />
       <div style={{ display: "flex", flex: 1, paddingTop: "60px" }}>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <Page isOpen={isSidebarOpen}>
           <Container>
             {loading ? (

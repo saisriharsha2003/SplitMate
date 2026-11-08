@@ -25,6 +25,20 @@ import {
   MetricLabel,
   MetricValue,
   MetricNote,
+  ChartsGrid,
+  ChartPanel,
+  ChartHeading,
+  ChartSubtitle,
+  DonutChart,
+  ChartLegend,
+  LegendRow,
+  ColorDot,
+  ChartValue,
+  TrendChart,
+  TrendColumn,
+  TrendBar,
+  TrendMonth,
+  ChartEmpty,
   LoadingState,
   ErrorState,
 } from "./DashboardStyle";
@@ -65,11 +79,24 @@ const Dashboard = () => {
   const monthTitle = metrics?.month
     ? new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${metrics.month}-01T00:00:00.000Z`))
     : "This month";
+  const chartColors = ["#80b4ff", "#fbcc13", "#64d6b0", "#ff987e", "#b99aff", "#f27fc4", "#8bd3e6", "#c4d174"];
+  const categoryBreakdown = metrics?.personal?.categoryBreakdown || [];
+  const categoryTotal = categoryBreakdown.reduce((sum, item) => sum + item.count, 0);
+  let categoryOffset = 0;
+  const categoryGradient = categoryBreakdown.length
+    ? `conic-gradient(${categoryBreakdown.map((item, index) => {
+        const start = categoryOffset;
+        categoryOffset += (item.count / categoryTotal) * 100;
+        return `${chartColors[index % chartColors.length]} ${start}% ${categoryOffset}%`;
+      }).join(", ")})`
+    : "conic-gradient(#34383a 0% 100%)";
+  const monthlyActivity = metrics?.personal?.monthlyActivity || [];
+  const maxMonthlyCount = Math.max(1, ...monthlyActivity.map((item) => item.count));
 
   return (
     <LayoutWrapper>
       <Nav toggleSidebar={() => setIsSidebarOpen((open) => !open)} />
-      <Sidebar isOpen={isSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <ContentWrapper $sidebarOpen={isSidebarOpen}>
         <Header>
           <div>
@@ -141,7 +168,7 @@ const Dashboard = () => {
                   <MetricIcon $tone="personal"><FaChartPie /></MetricIcon>
                   <MetricLabel>Personal spend · {monthTitle}</MetricLabel>
                   <MetricValue $compact>{formatCurrencyTotals(metrics.personal.thisMonthByCurrency, metrics.currency)}</MetricValue>
-                  <MetricNote>{sumCounts(metrics.personal.thisMonthByCurrency)} personal expenses this month</MetricNote>
+                  <MetricNote>{sumCounts(metrics.personal.thisMonthByCurrency)} personal entries this month · cashback deducted</MetricNote>
                 </MetricCard>
                 <MetricCard>
                   <MetricIcon $tone="personal"><FaChartPie /></MetricIcon>
@@ -152,10 +179,45 @@ const Dashboard = () => {
                 <MetricCard>
                   <MetricIcon $tone="personal"><FaReceipt /></MetricIcon>
                   <MetricLabel>Top category · {monthTitle}</MetricLabel>
-                  <MetricValue $compact>{metrics.personal.topCategory?.name || "No data yet"}</MetricValue>
-                  <MetricNote>{metrics.personal.topCategory ? `${metrics.personal.topCategory.count} entries · ${formatMoney(metrics.personal.topCategory.amount, metrics.personal.topCategory.currency)}` : "Add a personal expense to get started"}</MetricNote>
+                  <MetricValue $compact>{categoryBreakdown[0]?.name || "No data yet"}</MetricValue>
+                  <MetricNote>{categoryBreakdown[0] ? `${categoryBreakdown[0].count} entries this month` : "Add a personal expense to get started"}</MetricNote>
                 </MetricCard>
               </MetricGrid>
+              <ChartsGrid>
+                <ChartPanel>
+                  <ChartHeading>Monthly expense categories</ChartHeading>
+                  <ChartSubtitle>Share of your {monthTitle.toLowerCase()} entries</ChartSubtitle>
+                  {categoryTotal ? (
+                    <div className="category-chart-layout">
+                      <DonutChart role="img" aria-label={`Expense categories by count: ${categoryBreakdown.map((item) => `${item.name}, ${item.count}`).join("; ")}`} style={{ background: categoryGradient }}>
+                        <span><strong>{categoryTotal}</strong><small>expenses</small></span>
+                      </DonutChart>
+                      <ChartLegend>
+                        {categoryBreakdown.map((item, index) => (
+                          <LegendRow key={item.name}>
+                            <ColorDot $color={chartColors[index % chartColors.length]} />
+                            <span>{item.name}</span>
+                            <ChartValue>{item.count} · {Math.round((item.count / categoryTotal) * 100)}%</ChartValue>
+                          </LegendRow>
+                        ))}
+                      </ChartLegend>
+                    </div>
+                  ) : <ChartEmpty>No personal expenses recorded this month.</ChartEmpty>}
+                </ChartPanel>
+                <ChartPanel>
+                  <ChartHeading>Expense activity</ChartHeading>
+                  <ChartSubtitle>Number of personal entries over the last six months</ChartSubtitle>
+                  <TrendChart aria-label="Monthly personal expense counts">
+                    {monthlyActivity.map((item) => (
+                      <TrendColumn key={item.month} title={`${item.count} ${item.count === 1 ? "expense" : "expenses"}`}>
+                        <TrendBar $height={item.count ? Math.max(8, (item.count / maxMonthlyCount) * 100) : 3} $active={item.month === metrics.month} />
+                        <strong>{item.count}</strong>
+                        <TrendMonth>{new Intl.DateTimeFormat(undefined, { month: "short", timeZone: "UTC" }).format(new Date(`${item.month}-01T00:00:00.000Z`))}</TrendMonth>
+                      </TrendColumn>
+                    ))}
+                  </TrendChart>
+                </ChartPanel>
+              </ChartsGrid>
             </OverviewPanel>
           </OverviewGrid>
         )}

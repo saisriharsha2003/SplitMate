@@ -79,7 +79,7 @@ const NewGroup = () => {
     <div>
       <Nav toggleSidebar={() => setIsSidebarOpen((p) => !p)} />
       <Wrapper>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <Content>
           <FormBox
             as={motion.div}

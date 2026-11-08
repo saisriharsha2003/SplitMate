@@ -97,7 +97,7 @@ const Groups = () => {
       <Nav toggleSidebar={() => setIsSidebarOpen((p) => !p)} />
 
       <div style={{ display: "flex", flex: 1, paddingTop: "60px" }}>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
         <Content
           style={{

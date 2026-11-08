@@ -17,7 +17,10 @@ export const ModalBox = styled.div`
   border-radius: 12px;
   color: #fff;
   text-align: center;
-  min-width: 300px;
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: clamp(20px, 5vw, 30px);
   display: flex;
   flex-direction: column;
   gap: 12px;

@@ -88,7 +88,7 @@ const EditProfile = () => {
     <>
       <Nav toggleSidebar={() => setIsSidebarOpen((open) => !open)} />
       <div style={{ display: "flex", flex: 1, paddingTop: "60px" }}>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <ProfileContainer style={{ marginLeft: isSidebarOpen ? "220px" : "80px" }}>
           <ProfileBox
             as={motion.section}

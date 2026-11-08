@@ -248,7 +248,7 @@ const ViewGroup = () => {
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Nav toggleSidebar={() => setIsSidebarOpen((p) => !p)} />
       <div style={{ display: "flex", flex: 1, paddingTop: "60px" }}>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <Wrapper style={{ marginLeft: isSidebarOpen ? "220px" : "80px" }}>
           <Header>
             <Title>{group.name}</Title>

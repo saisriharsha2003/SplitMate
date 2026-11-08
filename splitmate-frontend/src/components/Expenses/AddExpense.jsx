@@ -243,7 +243,7 @@ const AddExpense = ({ isEdit = false }) => {
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <Nav toggleSidebar={() => setIsSidebarOpen((open) => !open)} />
         <Wrapper>
-          <Sidebar isOpen={isSidebarOpen} />
+          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
           <Content isOpen={isSidebarOpen}>
             <PageState>
               {pageLoading ? "Loading group members…" : pageError || "Could not load this group."}
@@ -259,7 +259,7 @@ const AddExpense = ({ isEdit = false }) => {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Nav toggleSidebar={() => setIsSidebarOpen((open) => !open)} />
       <Wrapper>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <Content isOpen={isSidebarOpen}>
           <FormBox>
             <FormHeader>

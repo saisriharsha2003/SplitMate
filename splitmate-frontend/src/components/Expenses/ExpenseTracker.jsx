@@ -19,8 +19,8 @@ const getToday = () => {
 const getCurrentMonth = () => getToday().slice(0, 7);
 const CATEGORIES = [
   "Online Order", "Rapido", "Swiggy", "Zomato", "Groceries", "Food & Dining",
-  "Transport", "Auto / Taxi", "Fuel", "Shopping", "Bills & Utilities", "Rent",
-  "Health & Medical", "Entertainment", "Travel", "Education", "Personal Care",
+  "Transport", "Auto / Taxi", "Fuel", "Shopping", "Cashback", "Bills & Utilities", "Rent",
+  "Health & Medical", "EMI", "Entertainment", "Travel", "Education", "Personal Care",
   "Subscriptions", "Gifts", "Home", "Other",
 ];
 const blankForm = (month, currency) => ({
@@ -49,7 +49,7 @@ const ExpenseTracker = () => {
     setError("");
     try {
       const response = await axios.get(`${BASE_URL}/api/user/personal-expenses`, {
-        params: { month, page, limit: 5 },
+        params: { month, page, limit: 10 },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setExpenses(response.data.expenses || []);
@@ -72,6 +72,10 @@ const ExpenseTracker = () => {
   }, [availableMonths, selectedMonth]);
 
   const monthExpenses = expenses;
+  const getNetAmount = (expense) =>
+    expense.category?.trim().toLowerCase() === "cashback"
+      ? -Number(expense.amount || 0)
+      : Number(expense.amount || 0);
   const monthTotal = monthTotals.length === 1
     ? formatMoney(monthTotals[0].amount, monthTotals[0].currency)
     : monthTotals.map((item) => formatMoney(item.amount, item.currency)).join(" · ") || formatMoney(0);
@@ -167,7 +171,7 @@ const ExpenseTracker = () => {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Nav toggleSidebar={() => setIsSidebarOpen((open) => !open)} />
       <div style={{ display: "flex", flex: 1, paddingTop: "60px" }}>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <Wrapper style={{ marginLeft: isSidebarOpen ? "220px" : "80px" }}>
           <Header>
             <div>
@@ -191,9 +195,9 @@ const ExpenseTracker = () => {
             <SheetHeader>
               <div>
                 <MonthTitle>{formatMonth(selectedMonth)}</MonthTitle>
-                <p>{monthExpenses.length} {monthExpenses.length === 1 ? "expense" : "expenses"} in this month</p>
+                <p>{monthExpenses.length} {monthExpenses.length === 1 ? "entry" : "entries"} on this page</p>
               </div>
-              <MonthTotal>{monthTotal}<span>MONTH TOTAL · {expenseTotal} EXPENSES</span></MonthTotal>
+              <MonthTotal>{monthTotal}<span>NET MONTHLY SPEND · CASHBACK DEDUCTED · {expenseTotal} ENTRIES</span></MonthTotal>
               <AddButton type="button" onClick={formOpen ? () => setFormOpen(false) : openAddForm}>
                 {formOpen ? <FaTimes /> : <FaPlus />}{formOpen ? "Close" : "Add expense"}
               </AddButton>
@@ -259,7 +263,7 @@ const ExpenseTracker = () => {
                         <tr className="date-group">
                           <td colSpan={6}>
                             <span>{new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${dateKey}T00:00:00.000Z`))}</span>
-                            <strong>Daily total · {formatMoney(dateExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0))}</strong>
+                            <strong>Daily net · {formatMoney(dateExpenses.reduce((sum, expense) => sum + getNetAmount(expense), 0))}</strong>
                           </td>
                         </tr>
                         {dateExpenses.map((expense) => (

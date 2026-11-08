@@ -12,3 +12,25 @@ body, html, #root {
   padding: 0;
   background-color: black; 
 }
+
+html, body, #root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  #root main,
+  #root [style*="margin-left: 80px"],
+  #root [style*="margin-left: 220px"] {
+    margin-left: 0 !important;
+  }
+}

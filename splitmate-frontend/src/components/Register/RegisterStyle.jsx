@@ -3,10 +3,11 @@ import background from "../../assets/images/background.jpg";
 import CreatableSelect from "react-select/creatable";
 
 export const AuthWrapper = styled.div`
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100svh;
   width: 100%;
   display: flex;
-  padding-top: 65px;
+  padding: 95px 18px 30px;
   justify-content: center;
   align-items: center;
   background: url(${background}) no-repeat center center/cover;
@@ -14,8 +15,8 @@ export const AuthWrapper = styled.div`
 
 export const AuthContainer = styled.div`
   display: flex;
-  width: 900px;
-  height: 550px;
+  width: min(100%, 900px);
+  min-height: min(550px, calc(100svh - 125px));
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(150px);
   border-radius: 20px;
@@ -24,8 +25,10 @@ export const AuthContainer = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
-    height: auto;
+    min-height: 0;
   }
+
+  @media (max-width: 560px) { border-radius: 14px; }
 `;
 
 export const ImageSection = styled.div`
@@ -41,6 +44,8 @@ export const ImageSection = styled.div`
     max-width: 400px;
     border-radius: 12px;
   }
+  @media (max-width: 768px) { padding: 14px; img { max-height: 220px; object-fit: cover; } }
+  @media (max-width: 560px) { display: none; }
 `;
 
 export const FormSection = styled.div`
@@ -48,7 +53,7 @@ export const FormSection = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 40px;
+  padding: clamp(22px, 5vw, 40px);
   color: #fff;
 `;
 

@@ -10,11 +10,13 @@ export const Wrapper = styled.div`
 
 export const Content = styled.div`
   flex: 1;
+  min-width: 0;
   margin-left: ${(props) => (props.isOpen ? "220px" : "80px")};
   transition: margin 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  @media (max-width: 760px) { margin-left: 0; padding: 18px; }
 `;
 
 const fadeIn = keyframes`
@@ -24,7 +26,7 @@ const fadeIn = keyframes`
 
 export const FormBox = styled.div`
   background: rgba(0,0,0,0.85);
-  padding: 30px;
+  padding: clamp(20px, 5vw, 30px);
   border-radius: 12px;
   box-shadow: 0 0 20px #FBCC13;
   max-width: 500px;

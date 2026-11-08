@@ -199,6 +199,132 @@ export const MetricNote = styled.div`
   line-height: 1.4;
 `;
 
+export const ChartsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  @media (max-width: 760px) { grid-template-columns: 1fr; }
+`;
+
+export const ChartPanel = styled.section`
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.018);
+  .category-chart-layout { display: flex; align-items: center; gap: clamp(18px, 4vw, 38px); margin-top: 18px; }
+  @media (max-width: 420px) { .category-chart-layout { flex-direction: column; align-items: stretch; } }
+`;
+
+export const ChartHeading = styled.h3`
+  margin: 0;
+  color: #f0f1f1;
+  font-size: 0.88rem;
+  font-weight: 700;
+`;
+
+export const ChartSubtitle = styled.p`
+  margin: 5px 0 0;
+  color: #858c90;
+  font-size: 0.72rem;
+`;
+
+export const DonutChart = styled.div`
+  display: grid;
+  width: 158px;
+  height: 158px;
+  flex: 0 0 158px;
+  place-items: center;
+  border-radius: 50%;
+  position: relative;
+  &::before { content: ""; position: absolute; inset: 19px; border-radius: 50%; background: #1c1e1f; }
+  span { position: relative; display: flex; flex-direction: column; align-items: center; }
+  strong { color: #f5f5f4; font-size: 1.55rem; line-height: 1.1; }
+  small { margin-top: 3px; color: #8e9599; font-size: 0.68rem; }
+  @media (max-width: 420px) { align-self: center; }
+`;
+
+export const ChartLegend = styled.div`
+  display: grid;
+  width: 100%;
+  gap: 9px;
+  max-height: 180px;
+  overflow: auto;
+`;
+
+export const LegendRow = styled.div`
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: #b4b9bc;
+  font-size: 0.72rem;
+  span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+`;
+
+export const ColorDot = styled.i`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${(props) => props.$color};
+`;
+
+export const ChartValue = styled.strong`
+  color: #e0e3e4;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+`;
+
+export const TrendChart = styled.div`
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  height: 190px;
+  margin-top: 18px;
+  padding-top: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+`;
+
+export const TrendColumn = styled.div`
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: #e2e4e5;
+  font-size: 0.68rem;
+  strong { font-size: 0.68rem; font-variant-numeric: tabular-nums; }
+`;
+
+export const TrendBar = styled.div`
+  width: min(100%, 34px);
+  height: ${(props) => props.$height}%;
+  min-height: 4px;
+  border-radius: 5px 5px 2px 2px;
+  background: ${(props) => props.$active ? "linear-gradient(180deg, #b3d2ff, #6595d6)" : "linear-gradient(180deg, #6688b3, #40546d)"};
+  opacity: ${(props) => props.$active ? 1 : 0.72};
+  transition: height 250ms ease;
+`;
+
+export const TrendMonth = styled.span`
+  padding-bottom: 8px;
+  color: #8e9599;
+  font-size: 0.67rem;
+`;
+
+export const ChartEmpty = styled.div`
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  color: #8e9599;
+  font-size: 0.78rem;
+  text-align: center;
+`;
+
 export const LoadingState = styled.div`
   display: flex;
   align-items: center;
