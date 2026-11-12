@@ -140,6 +140,7 @@ export const SheetHeader = styled.div`
   > div:first-child { min-width: 0; flex: 1 1 auto; }
   p { margin: 5px 0 0; color: #858b90; font-size: 0.78rem; }
   @media (max-width: 700px) { flex-wrap: wrap; padding: 18px; }
+  @media (max-width: 520px) { align-items: stretch; flex-direction: column; gap: 12px; padding: 16px; }
 `;
 
 export const MonthTitle = styled.h2`
@@ -182,19 +183,47 @@ export const AddButton = styled.button`
   cursor: pointer;
   transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
   &:hover { transform: translateY(-1px); border-color: rgba(251, 204, 19, 0.55); background: rgba(251, 204, 19, 0.16); }
+  &:disabled { cursor: not-allowed; opacity: .55; }
+  @media (max-width: 520px) { width: 100%; }
 `;
 
 export const ExpenseForm = styled.form`
-  margin: 18px 20px;
-  padding: 18px;
+  position: relative;
+  z-index: 3;
+  width: ${(props) => props.$modal ? (props.$wideModal ? "min(980px, 100%)" : "min(760px, 100%)") : "auto"};
+  margin: ${(props) => props.$modal ? "auto" : "20px 20px 28px"};
+  padding: ${(props) => props.$modal ? "26px" : "22px"};
   border: 1px solid rgba(251, 204, 19, 0.14);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.16);
+  border-radius: 16px;
+  background: ${(props) => props.$modal ? "linear-gradient(145deg, #252627, #171819)" : "rgba(0, 0, 0, 0.16)"};
+  box-shadow: ${(props) => props.$modal ? "0 28px 90px rgba(0,0,0,.58), inset 0 1px rgba(255,255,255,.035)" : "none"};
   animation: ${rise} 220ms ease both;
+  @media (max-width: 560px) {
+    width: ${(props) => props.$modal ? "100%" : "auto"};
+    margin: ${(props) => props.$modal ? "auto" : "14px 12px 22px"};
+    padding: 17px;
+  }
+`;
+
+export const ExpenseModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: safe center;
+  justify-content: center;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: clamp(14px, 3vh, 30px) clamp(12px, 3vw, 30px);
+  overscroll-behavior: contain;
+  background: rgba(5, 6, 7, 0.78);
+  backdrop-filter: blur(8px);
+  @media (max-width: 560px) { padding: 12px; backdrop-filter: blur(5px); }
+  @media (prefers-reduced-motion: reduce) { backdrop-filter: none; }
 `;
 
 export const FormTitle = styled.h3`
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   color: #e8e9e9;
   font-size: 0.96rem;
   font-weight: 650;
@@ -203,17 +232,19 @@ export const FormTitle = styled.h3`
 export const FormGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  column-gap: 16px;
+  row-gap: 20px;
   @media (max-width: 850px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   @media (max-width: 540px) { grid-template-columns: 1fr; }
 `;
 
 export const Field = styled.div`
   min-width: 0;
-  grid-column: ${(props) => (props.$wide ? "1 / -1" : "auto")};
+  grid-column: ${(props) => (props.$wide ? "1 / -1" : props.$spanTwo ? "span 2" : "auto")};
   display: flex;
   flex-direction: column;
   gap: 7px;
+  @media (max-width: 850px) { grid-column: ${(props) => (props.$wide ? "1 / -1" : props.$spanTwo ? "span 2" : "auto")}; }
   @media (max-width: 540px) { grid-column: 1; }
 `;
 
@@ -239,6 +270,22 @@ export const Input = styled.input`
   color-scheme: dark;
   &::placeholder { color: #70777b; }
   &:focus { border-color: rgba(251, 204, 19, 0.5); box-shadow: 0 0 0 3px rgba(251, 204, 19, 0.06); }
+`;
+
+export const DropdownFrame = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  &:hover { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.055); }
+  &:focus-within { border-color: rgba(251, 204, 19, 0.5); box-shadow: 0 0 0 3px rgba(251, 204, 19, 0.06); }
+  > div > button { min-height: 38px; padding: 0 2px; font-size: 0.84rem; }
 `;
 
 export const Select = styled.select`
@@ -268,7 +315,10 @@ export const FormActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 9px;
-  margin-top: 16px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  @media (max-width: 420px) { flex-direction: column-reverse; button { width: 100%; } }
 `;
 
 export const SecondaryButton = styled.button`
@@ -293,7 +343,10 @@ export const PrimaryButton = styled(SecondaryButton)`
 `;
 
 export const SheetTableWrap = styled.div`
+  position: relative;
+  z-index: 1;
   width: 100%;
+  margin-top: 4px;
   overflow-x: auto;
   border-top: 1px solid rgba(251, 204, 19, 0.09);
   scrollbar-width: thin;
@@ -304,7 +357,7 @@ export const SheetTableWrap = styled.div`
 
 export const SheetTable = styled.table`
   width: 100%;
-  min-width: 760px;
+  min-width: 1040px;
   border-collapse: collapse;
   text-align: left;
 
@@ -312,7 +365,7 @@ export const SheetTable = styled.table`
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 11px 16px;
+    padding: 14px 18px;
     border-bottom: 1px solid rgba(251, 204, 19, 0.16);
     background: #1b1c1d;
     color: #c3ac52;
@@ -323,8 +376,8 @@ export const SheetTable = styled.table`
   }
 
   td {
-    height: 48px;
-    padding: 9px 16px;
+    height: 58px;
+    padding: 13px 18px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     color: #9fa5a8;
     font-size: 0.79rem;
@@ -337,7 +390,7 @@ export const SheetTable = styled.table`
   tbody tr:last-child td { border-bottom: 0; }
   tbody tr.date-group td {
     height: auto;
-    padding: 10px 16px;
+    padding: 13px 18px;
     border-bottom: 1px solid rgba(251, 204, 19, 0.1);
     background: rgba(251, 204, 19, 0.045);
     color: #e2c64c;
