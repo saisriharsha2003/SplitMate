@@ -30,6 +30,13 @@ import {
   removeGroupMember,
   deleteGroup,
 } from '../controllers/userController.js';
+import {
+  addAccountEntry,
+  createAccount,
+  deleteAccount,
+  getAccounts,
+  updateAccount,
+} from '../controllers/accountController.js';
 
 const router = express.Router();
 
@@ -43,6 +50,9 @@ router.get('/profile', verifyJWT, getUserProfile);
 router.get('/dashboard/metrics', verifyJWT, getDashboardMetrics);
 router.put('/profile/password', verifyJWT, updatePassword);
 router.put('/profile', verifyJWT, updateUserProfile);
+router.route('/accounts').get(verifyJWT, getAccounts).post(verifyJWT, createAccount);
+router.route('/accounts/:accountId').put(verifyJWT, updateAccount).delete(verifyJWT, deleteAccount);
+router.post('/accounts/:accountId/entries', verifyJWT, addAccountEntry);
 router.post('/reset-password', resetPassword);
 router.post('/verify-code', verifyCode);
 router.put('/new-password', newPassword);
