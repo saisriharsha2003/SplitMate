@@ -32,6 +32,13 @@ const DropdownHeader = styled.button`
   text-align: left;
   transition: color 160ms ease;
 
+  .value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   &:hover { color: #fff; }
   &:focus-visible { outline: 2px solid rgba(251, 204, 19, 0.55); outline-offset: -3px; border-radius: 8px; }
 
@@ -71,6 +78,7 @@ const DropdownList = styled.ul`
 const DropdownItem = styled.li``;
 
 const DropdownOption = styled.button`
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
@@ -78,18 +86,31 @@ const DropdownOption = styled.button`
   padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
-  background: ${(props) => (props.$selected ? "rgba(251, 204, 19, 0.1)" : "transparent")};
-  color: ${(props) => (props.$selected ? "#f4d65a" : "#e5e7e8")};
+  background: ${(props) => (props.$selected ? "rgba(251, 204, 19, 0.12)" : "transparent")};
+  color: ${(props) => (props.$selected ? "#ffe27a" : "#e5e7e8")};
   font: inherit;
   font-size: 0.9rem;
   text-align: left;
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 
-  &:hover, &:focus-visible { outline: none; border-color: rgba(251, 204, 19, 0.17); background: rgba(251, 204, 19, 0.09); color: #f4d65a; }
+  &:hover { border-color: rgba(251, 204, 19, 0.38); background: linear-gradient(100deg, rgba(251, 204, 19, 0.2), rgba(251, 204, 19, 0.11)); color: #ffe27a; }
+  &:focus-visible { outline: 2px solid rgba(251, 204, 19, 0.85); outline-offset: -2px; border-color: rgba(251, 204, 19, 0.45); background: rgba(251, 204, 19, 0.18); color: #fff0a8; }
+  &:active { background: rgba(251, 204, 19, 0.25); }
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    border-radius: 3px;
+    background: ${(props) => (props.$selected ? "#fbcc13" : "transparent")};
+  }
 `;
 
-const CustomSelect = ({ id, options, value, onChange, placeholder }) => {
+const CustomSelect = ({ id, options, value, onChange, placeholder, ariaLabel }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -116,6 +137,7 @@ const CustomSelect = ({ id, options, value, onChange, placeholder }) => {
       <DropdownHeader
         type="button"
         id={id}
+        aria-label={ariaLabel}
         $isOpen={isOpen}
         $hasValue={Boolean(value)}
         aria-haspopup="listbox"
@@ -125,11 +147,11 @@ const CustomSelect = ({ id, options, value, onChange, placeholder }) => {
           if (event.key === "Escape") setIsOpen(false);
         }}
       >
-        {value?.label || placeholder || "Select..."}
+        <span className="value">{value?.label || placeholder || "Select..."}</span>
         <FaChevronDown className="icon" />
       </DropdownHeader>
       {isOpen && (
-        <DropdownList role="listbox" aria-label="Choose who paid">
+        <DropdownList role="listbox" aria-label={ariaLabel || "Choose an option"}>
           {options.map((opt) => (
             <DropdownItem key={opt.value} role="option" aria-selected={value?.value === opt.value}>
               <DropdownOption type="button" $selected={value?.value === opt.value} onClick={() => handleSelect(opt)}>

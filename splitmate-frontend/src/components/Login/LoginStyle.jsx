@@ -176,4 +176,4 @@ export const SwitchText = styled.p`
   }
 `;
 
-export const MotionButton = motion(Button);
+export const MotionButton = motion.create(Button);
