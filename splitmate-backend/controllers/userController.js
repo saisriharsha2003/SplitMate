@@ -17,6 +17,29 @@ import mongoose from "mongoose";
 import { rebuildAccountLedger } from "../services/accountLedger.js";
 dotenv.config();
 
+const personalCategoryLowerExpression = { $toLower: { $ifNull: ["$category", ""] } };
+const effectivePersonalDirectionExpression = {
+  $ifNull: [
+    "$direction",
+    { $cond: [{ $in: [personalCategoryLowerExpression, ["cashback", "salary"]] }, "credit", "debit"] },
+  ],
+};
+const personalNetSpendExpression = {
+  $cond: [
+    { $eq: [effectivePersonalDirectionExpression, "transfer"] },
+    0,
+    { $cond: [
+    { $eq: [effectivePersonalDirectionExpression, "credit"] },
+    { $cond: [
+      { $eq: [personalCategoryLowerExpression, "salary"] },
+      0,
+      { $multiply: ["$amount", -1] },
+    ] },
+    "$amount",
+    ] },
+  ],
+};
+
 const recordGroupActivity = async (groupId, actor, action, message, details = {}) => {
   const activity = await GroupActivity.create({ groupId, actor, action, message, details });
   try {
@@ -341,15 +364,29 @@ const parsePersonalExpense = (body) => {
   if (!description || description.length > 140) throw new Error("Enter a description up to 140 characters");
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount greater than zero");
   if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== body.date) {
-    throw new Error("Choose a valid expense date");
+    throw new Error("Choose a valid transaction date");
+  }
+  const time = body.time === undefined ? "00:00" : body.time;
+  if (typeof time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+    throw new Error("Choose a valid transaction time");
   }
   const currency = body.currency || "INR";
   if (!["INR", "USD", "EUR", "GBP"].includes(currency)) throw new Error("Choose a supported currency");
   const category = typeof body.category === "string" && body.category.trim() ? body.category.trim() : "Other";
   if (category.length > 40) throw new Error("Category must be 40 characters or fewer");
+  const direction = ["credit", "debit", "transfer"].includes(body.direction)
+    ? body.direction
+    : ["cashback", "salary"].includes(category.toLowerCase()) ? "credit" : "debit";
+  if (body.direction !== undefined && !["credit", "debit", "transfer"].includes(body.direction)) {
+    throw new Error("Choose a valid transaction type");
+  }
+  const transferAccountId = body.transferAccountId || null;
+  if (direction === "transfer" && !mongoose.isValidObjectId(transferAccountId)) {
+    throw new Error("Choose a destination account for this transfer");
+  }
   const notes = typeof body.notes === "string" ? body.notes.trim() : "";
   if (notes.length > 500) throw new Error("Notes must be 500 characters or fewer");
-  return { description, amount: Math.round(amount * 100) / 100, currency, category, date, notes };
+  return { description, direction, amount: Math.round(amount * 100) / 100, currency, category: direction === "transfer" ? "Transfer" : category, date, time, notes, transferAccountId };
 };
 
 export const getPersonalExpenses = async (req, res) => {
@@ -364,17 +401,13 @@ export const getPersonalExpenses = async (req, res) => {
       filter.date = { $gte: start, $lt: end };
     }
     const [expenses, user, monthTotals] = await Promise.all([
-      PersonalExpense.find(filter).populate("account", "name type currency").sort({ date: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      PersonalExpense.find(filter).populate("account", "name type currency").populate("transferAccount", "name type currency").sort({ date: -1, time: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit),
       User.findById(req.user.userId).select("default_currency"),
       PersonalExpense.aggregate([
         { $match: { ...filter, owner: new mongoose.Types.ObjectId(req.user.userId) } },
         { $group: {
           _id: "$currency",
-          amount: { $sum: { $cond: [
-            { $eq: [{ $toLower: { $ifNull: ["$category", ""] } }, "cashback"] },
-            { $multiply: ["$amount", -1] },
-            "$amount",
-          ] } },
+          amount: { $sum: personalNetSpendExpression },
         } },
       ]),
     ]);
@@ -386,8 +419,8 @@ export const getPersonalExpenses = async (req, res) => {
     ]);
     return res.json({ expenses, currency: user?.default_currency || "INR", total, page, pages: Math.ceil(total / limit), limit, months: monthList.map((item) => item._id), monthTotals: monthTotals.map((item) => ({ currency: item._id || "INR", amount: item.amount })) });
   } catch (error) {
-    console.error("Error fetching personal expenses:", error);
-    return res.status(500).json({ error: "Could not load personal expenses" });
+    console.error("Error fetching personal transactions:", error);
+    return res.status(500).json({ error: "Could not load personal transactions" });
   }
 };
 
@@ -415,11 +448,7 @@ export const getDashboardMetrics = async (req, res) => {
         { $match: { owner: new mongoose.Types.ObjectId(req.user.userId) } },
         { $group: {
           _id: "$currency",
-          amount: { $sum: { $cond: [
-            { $eq: [{ $toLower: { $ifNull: ["$category", ""] } }, "cashback"] },
-            { $multiply: ["$amount", -1] },
-            "$amount",
-          ] } },
+          amount: { $sum: personalNetSpendExpression },
           count: { $sum: 1 },
         } },
       ]),
@@ -427,16 +456,12 @@ export const getDashboardMetrics = async (req, res) => {
         { $match: { owner: new mongoose.Types.ObjectId(req.user.userId), date: { $gte: monthStart, $lt: nextMonthStart } } },
         { $group: {
           _id: "$currency",
-          amount: { $sum: { $cond: [
-            { $eq: [{ $toLower: { $ifNull: ["$category", ""] } }, "cashback"] },
-            { $multiply: ["$amount", -1] },
-            "$amount",
-          ] } },
+          amount: { $sum: personalNetSpendExpression },
           count: { $sum: 1 },
         } },
       ]),
       PersonalExpense.aggregate([
-        { $match: { owner: new mongoose.Types.ObjectId(req.user.userId), date: { $gte: monthStart, $lt: nextMonthStart } } },
+        { $match: { owner: new mongoose.Types.ObjectId(req.user.userId), date: { $gte: monthStart, $lt: nextMonthStart }, direction: { $ne: "transfer" } } },
         { $group: { _id: "$category", count: { $sum: 1 } } },
         { $sort: { count: -1, _id: 1 } },
       ]),
@@ -483,65 +508,87 @@ export const createPersonalExpense = async (req, res) => {
     try { input = parsePersonalExpense(req.body); }
     catch (error) { return res.status(400).json({ error: error.message }); }
     const accountId = req.body.accountId;
-    if (!mongoose.isValidObjectId(accountId)) return res.status(400).json({ error: "Choose an account for this expense" });
+    if (!mongoose.isValidObjectId(accountId)) return res.status(400).json({ error: "Choose an account for this transaction" });
     const account = await FinancialAccount.findOne({ _id: accountId, owner: req.user.userId });
     if (!account) return res.status(404).json({ error: "Account not found" });
-    if (input.currency !== account.currency) return res.status(400).json({ error: "Expense currency must match the selected account" });
+    if (input.currency !== account.currency) return res.status(400).json({ error: "Transaction currency must match the selected account" });
+    let transferAccount = null;
+    if (input.direction === "transfer") {
+      if (String(account._id) === String(input.transferAccountId)) return res.status(400).json({ error: "Choose two different accounts for a transfer" });
+      transferAccount = await FinancialAccount.findOne({ _id: input.transferAccountId, owner: req.user.userId });
+      if (!transferAccount) return res.status(404).json({ error: "Destination account not found" });
+      if (transferAccount.currency !== account.currency) return res.status(400).json({ error: "Transfer accounts must use the same currency" });
+    }
+    const transactionInput = { ...input };
+    delete transactionInput.transferAccountId;
     const expense = await PersonalExpense.create({
       owner: req.user.userId,
-      ...input,
+      ...transactionInput,
       currency: account.currency,
       account: account._id,
+      transferAccount: transferAccount?._id || null,
     });
     await rebuildAccountLedger(account._id, req.user.userId);
-    const savedExpense = await PersonalExpense.findById(expense._id).populate("account", "name type currency");
-    return res.status(201).json({ message: "Personal expense added", expense: savedExpense });
+    if (transferAccount) await rebuildAccountLedger(transferAccount._id, req.user.userId);
+    const savedExpense = await PersonalExpense.findById(expense._id).populate("account", "name type currency").populate("transferAccount", "name type currency");
+    return res.status(201).json({ message: "Personal transaction added", expense: savedExpense });
   } catch (error) {
-    console.error("Error creating personal expense:", error);
-    return res.status(500).json({ error: "Could not add personal expense" });
+    console.error("Error creating personal transaction:", error);
+    return res.status(500).json({ error: "Could not add personal transaction" });
   }
 };
 
 export const updatePersonalExpense = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.expenseId)) return res.status(400).json({ error: "Invalid expense ID" });
+    if (!mongoose.isValidObjectId(req.params.expenseId)) return res.status(400).json({ error: "Invalid transaction ID" });
     let input;
     try { input = parsePersonalExpense(req.body); }
     catch (error) { return res.status(400).json({ error: error.message }); }
     const expense = await PersonalExpense.findOne({ _id: req.params.expenseId, owner: req.user.userId });
-    if (!expense) return res.status(404).json({ error: "Personal expense not found" });
+    if (!expense) return res.status(404).json({ error: "Personal transaction not found" });
     const accountId = req.body.accountId;
-    if (!mongoose.isValidObjectId(accountId)) return res.status(400).json({ error: "Choose an account for this expense" });
+    if (!mongoose.isValidObjectId(accountId)) return res.status(400).json({ error: "Choose an account for this transaction" });
     const account = await FinancialAccount.findOne({ _id: accountId, owner: req.user.userId });
     if (!account) return res.status(404).json({ error: "Account not found" });
-    if (input.currency !== account.currency) return res.status(400).json({ error: "Expense currency must match the selected account" });
-    const previousAccountId = expense.account;
-    Object.assign(expense, input, { account: account._id, currency: account.currency });
-    await expense.save();
-    if (previousAccountId && String(previousAccountId) !== String(account._id)) {
-      await rebuildAccountLedger(previousAccountId, req.user.userId);
+    if (input.currency !== account.currency) return res.status(400).json({ error: "Transaction currency must match the selected account" });
+    let transferAccount = null;
+    if (input.direction === "transfer") {
+      if (String(account._id) === String(input.transferAccountId)) return res.status(400).json({ error: "Choose two different accounts for a transfer" });
+      transferAccount = await FinancialAccount.findOne({ _id: input.transferAccountId, owner: req.user.userId });
+      if (!transferAccount) return res.status(404).json({ error: "Destination account not found" });
+      if (transferAccount.currency !== account.currency) return res.status(400).json({ error: "Transfer accounts must use the same currency" });
     }
-    await rebuildAccountLedger(account._id, req.user.userId);
-    const savedExpense = await PersonalExpense.findById(expense._id).populate("account", "name type currency");
-    return res.json({ message: "Personal expense updated", expense: savedExpense });
+    const affectedAccountIds = new Set([expense.account, expense.transferAccount, account._id, transferAccount?._id].filter(Boolean).map(String));
+    const transactionInput = { ...input };
+    delete transactionInput.transferAccountId;
+    Object.assign(expense, transactionInput, {
+      account: account._id,
+      transferAccount: transferAccount?._id || null,
+      transferBalanceAfter: null,
+      currency: account.currency,
+    });
+    await expense.save();
+    await Promise.all([...affectedAccountIds].map((id) => rebuildAccountLedger(id, req.user.userId)));
+    const savedExpense = await PersonalExpense.findById(expense._id).populate("account", "name type currency").populate("transferAccount", "name type currency");
+    return res.json({ message: "Personal transaction updated", expense: savedExpense });
   } catch (error) {
-    console.error("Error updating personal expense:", error);
-    return res.status(500).json({ error: "Could not update personal expense" });
+    console.error("Error updating personal transaction:", error);
+    return res.status(500).json({ error: "Could not update personal transaction" });
   }
 };
 
 export const deletePersonalExpense = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.expenseId)) return res.status(400).json({ error: "Invalid expense ID" });
+    if (!mongoose.isValidObjectId(req.params.expenseId)) return res.status(400).json({ error: "Invalid transaction ID" });
     const expense = await PersonalExpense.findOne({ _id: req.params.expenseId, owner: req.user.userId });
-    if (!expense) return res.status(404).json({ error: "Personal expense not found" });
-    const accountId = expense.account;
+    if (!expense) return res.status(404).json({ error: "Personal transaction not found" });
+    const accountIds = [...new Set([expense.account, expense.transferAccount].filter(Boolean).map(String))];
     await expense.deleteOne();
-    if (accountId) await rebuildAccountLedger(accountId, req.user.userId);
-    return res.json({ message: "Personal expense deleted" });
+    await Promise.all(accountIds.map((accountId) => rebuildAccountLedger(accountId, req.user.userId)));
+    return res.json({ message: "Personal transaction deleted" });
   } catch (error) {
-    console.error("Error deleting personal expense:", error);
-    return res.status(500).json({ error: "Could not delete personal expense" });
+    console.error("Error deleting personal transaction:", error);
+    return res.status(500).json({ error: "Could not delete personal transaction" });
   }
 };
 

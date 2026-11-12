@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import AccountEntry from "../models/AccountEntry.js";
 import FinancialAccount from "../models/FinancialAccount.js";
 import PersonalExpense from "../models/PersonalExpense.js";
 import { ownedAccount, rebuildAccountLedger } from "../services/accountLedger.js";
@@ -15,30 +14,30 @@ export const getAccounts = async (req, res) => {
   try {
     const accounts = await FinancialAccount.find({ owner: req.user.userId }).sort({ createdAt: -1 }).lean();
     const result = await Promise.all(accounts.map(async (account) => {
-      const [expenses, entries] = await Promise.all([
-        PersonalExpense.find({ owner: req.user.userId, account: account._id }).sort({ date: -1, createdAt: -1 }).limit(20).lean(),
-        AccountEntry.find({ owner: req.user.userId, account: account._id }).sort({ date: -1, createdAt: -1 }).limit(20).lean(),
-      ]);
-      const history = [
-        ...expenses.map((expense) => ({
+      const expenses = await PersonalExpense.find({ owner: req.user.userId, $or: [{ account: account._id }, { transferAccount: account._id }] })
+        .populate("account", "name type currency")
+        .populate("transferAccount", "name type currency")
+        .sort({ date: -1, time: -1, createdAt: -1 }).limit(20).lean();
+      const history = expenses.map((expense) => {
+        const isTransfer = expense.direction === "transfer";
+        const isDestination = isTransfer && String(expense.transferAccount?._id) === String(account._id);
+        const direction = isTransfer
+          ? isDestination ? "credit" : "debit"
+          : expense.direction || (["cashback", "salary"].includes(expense.category?.trim().toLowerCase()) ? "credit" : "debit");
+        return {
           _id: expense._id,
-          kind: "expense",
-          direction: expense.category?.trim().toLowerCase() === "cashback" ? "credit" : "debit",
-          description: expense.description,
+          kind: isTransfer ? "transfer" : "expense",
+          direction,
+          description: isTransfer
+            ? `${isDestination ? "Transfer from" : "Transfer to"} ${isDestination ? expense.account?.name : expense.transferAccount?.name}`
+            : expense.description,
           amount: expense.amount,
           date: expense.date,
-          balanceAfter: expense.balanceAfter,
-        })),
-        ...entries.map((entry) => ({
-          _id: entry._id,
-          kind: "entry",
-          direction: entry.direction,
-          description: entry.description || (entry.direction === "credit" ? "Credit" : "Debit"),
-          amount: entry.amount,
-          date: entry.date,
-          balanceAfter: entry.balanceAfter,
-        })),
-      ].sort((left, right) => new Date(right.date) - new Date(left.date)).slice(0, 20);
+          time: expense.time || "00:00",
+          balanceAfter: isDestination ? expense.transferBalanceAfter : expense.balanceAfter,
+        };
+      });
+      history.sort((left, right) => new Date(right.date) - new Date(left.date));
       return { ...account, history };
     }));
     return res.json({ accounts: result });
@@ -106,46 +105,12 @@ export const deleteAccount = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.accountId)) return res.status(400).json({ error: "Invalid account ID" });
     const account = await ownedAccount(req.params.accountId, req.user.userId);
     if (!account) return res.status(404).json({ error: "Account not found" });
-    const [expenseCount, entryCount] = await Promise.all([
-      PersonalExpense.countDocuments({ owner: req.user.userId, account: account._id }),
-      AccountEntry.countDocuments({ owner: req.user.userId, account: account._id }),
-    ]);
-    if (expenseCount || entryCount) return res.status(409).json({ error: "This account has transaction history and cannot be deleted" });
+    const transactionCount = await PersonalExpense.countDocuments({ owner: req.user.userId, $or: [{ account: account._id }, { transferAccount: account._id }] });
+    if (transactionCount) return res.status(409).json({ error: "This account has transaction history and cannot be deleted" });
     await account.deleteOne();
     return res.json({ message: "Account deleted" });
   } catch (error) {
     console.error("Error deleting account:", error);
     return res.status(500).json({ error: "Could not delete this account" });
-  }
-};
-
-export const addAccountEntry = async (req, res) => {
-  try {
-    if (!mongoose.isValidObjectId(req.params.accountId)) return res.status(400).json({ error: "Invalid account ID" });
-    const account = await ownedAccount(req.params.accountId, req.user.userId);
-    if (!account) return res.status(404).json({ error: "Account not found" });
-    const direction = req.body.direction;
-    const amount = validAmount(req.body.amount);
-    const description = typeof req.body.description === "string" ? req.body.description.trim() : "";
-    const date = req.body.date ? new Date(req.body.date) : new Date();
-    if (!["credit", "debit"].includes(direction)) return res.status(400).json({ error: "Choose credit or debit" });
-    if (amount === null) return res.status(400).json({ error: "Enter an amount greater than zero" });
-    if (description.length > 140) return res.status(400).json({ error: "Description must be 140 characters or fewer" });
-    if (Number.isNaN(date.getTime())) return res.status(400).json({ error: "Enter a valid transaction date" });
-
-    const entry = await AccountEntry.create({
-      owner: req.user.userId,
-      account: account._id,
-      direction,
-      description: description || (direction === "credit" ? "Credit" : "Debit"),
-      amount,
-      date,
-    });
-    await rebuildAccountLedger(account._id, req.user.userId);
-    const savedEntry = await AccountEntry.findById(entry._id);
-    return res.status(201).json({ message: "Account entry added", entry: savedEntry });
-  } catch (error) {
-    console.error("Error adding account entry:", error);
-    return res.status(500).json({ error: "Could not add this account entry" });
   }
 };
