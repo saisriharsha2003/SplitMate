@@ -8,6 +8,8 @@ const personalExpenseSchema = new mongoose.Schema({
   category: { type: String, trim: true, default: "Other", maxlength: 40 },
   date: { type: Date, required: true, default: Date.now },
   notes: { type: String, trim: true, default: "", maxlength: 500 },
+  account: { type: mongoose.Schema.Types.ObjectId, ref: "FinancialAccount", default: null, index: true },
+  balanceAfter: { type: Number, default: null },
 }, { timestamps: true });
 
 personalExpenseSchema.index({ owner: 1, date: -1 });
