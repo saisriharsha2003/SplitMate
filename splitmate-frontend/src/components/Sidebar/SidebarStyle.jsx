@@ -75,6 +75,21 @@ export const SidebarBottom = styled.div`
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
+export const SectionTitle = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== "isOpen",
+})`
+  overflow: hidden;
+  height: ${(props) => (props.isOpen ? "28px" : "0")};
+  padding: ${(props) => (props.isOpen ? "8px 15px 3px" : "0")};
+  color: #7f8589;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: height 180ms ease, padding 180ms ease;
+`;
+
 export const SidebarItemWrapper = styled.div`
   position: relative;
   min-height: 48px;
