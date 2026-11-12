@@ -9,7 +9,6 @@ import {
   Input,
   Button,
   SwitchText,
-  CurrencySelect,
 } from "./RegisterStyle";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -18,7 +17,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { BASE_URL } from "../config";
 import registerImage from "../../assets/images/auth_image.jpg";
 import MainNav from "../MainNav/MainNav";
-import CurrencyDropdown from "../Helper/CurrencyDropdown";
+import CustomSelect from "../Helper/CustomeSelect";
 import {
   FaEnvelope,
   FaLock,
@@ -51,13 +50,6 @@ const Register = () => {
     { label: "INR", value: "INR" },
     { label: "USD", value: "USD" },
   ];
-
-  const handleCurrencyChange = (selected) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      default_currency: selected[0]?.value || "INR",
-    }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -161,18 +153,12 @@ const Register = () => {
               </InputGroup>
               <InputGroup>
                 <FaLock className="icon" />
-                <CurrencySelect
+                <CustomSelect
+                  ariaLabel="Default currency"
                   options={currencyOptions}
-                  onChange={(selected) =>
-                    setFormData({
-                      ...formData,
-                      default_currency: selected.value,
-                    })
-                  }
+                  value={currencyOptions.find((option) => option.value === formData.default_currency)}
+                  onChange={(selected) => setFormData((current) => ({ ...current, default_currency: selected.value }))}
                   placeholder="Select Currency"
-                  isClearable={false}
-                  isSearchable={false}
-                  defaultValue={currencyOptions[0]}
                 />
               </InputGroup>
 
