@@ -4,6 +4,7 @@ import Group from "../models/Groups.js";
 import Expense from "../models/Expense.js";
 import GroupActivity from "../models/GroupActivity.js";
 import PersonalExpense from "../models/PersonalExpense.js";
+import FinancialAccount from "../models/FinancialAccount.js";
 import Notification from "../models/Notification.js";
 import Settlement from "../models/Settlement.js";
 import jwt from "jsonwebtoken";
@@ -13,6 +14,7 @@ import nodemailer from "nodemailer";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import { rebuildAccountLedger } from "../services/accountLedger.js";
 dotenv.config();
 
 const recordGroupActivity = async (groupId, actor, action, message, details = {}) => {
@@ -362,7 +364,7 @@ export const getPersonalExpenses = async (req, res) => {
       filter.date = { $gte: start, $lt: end };
     }
     const [expenses, user, monthTotals] = await Promise.all([
-      PersonalExpense.find(filter).sort({ date: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      PersonalExpense.find(filter).populate("account", "name type currency").sort({ date: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit),
       User.findById(req.user.userId).select("default_currency"),
       PersonalExpense.aggregate([
         { $match: { ...filter, owner: new mongoose.Types.ObjectId(req.user.userId) } },
@@ -480,13 +482,20 @@ export const createPersonalExpense = async (req, res) => {
     let input;
     try { input = parsePersonalExpense(req.body); }
     catch (error) { return res.status(400).json({ error: error.message }); }
-    const user = await User.findById(req.user.userId).select("default_currency");
+    const accountId = req.body.accountId;
+    if (!mongoose.isValidObjectId(accountId)) return res.status(400).json({ error: "Choose an account for this expense" });
+    const account = await FinancialAccount.findOne({ _id: accountId, owner: req.user.userId });
+    if (!account) return res.status(404).json({ error: "Account not found" });
+    if (input.currency !== account.currency) return res.status(400).json({ error: "Expense currency must match the selected account" });
     const expense = await PersonalExpense.create({
       owner: req.user.userId,
       ...input,
-      currency: req.body.currency || user?.default_currency || "INR",
+      currency: account.currency,
+      account: account._id,
     });
-    return res.status(201).json({ message: "Personal expense added", expense });
+    await rebuildAccountLedger(account._id, req.user.userId);
+    const savedExpense = await PersonalExpense.findById(expense._id).populate("account", "name type currency");
+    return res.status(201).json({ message: "Personal expense added", expense: savedExpense });
   } catch (error) {
     console.error("Error creating personal expense:", error);
     return res.status(500).json({ error: "Could not add personal expense" });
@@ -499,13 +508,22 @@ export const updatePersonalExpense = async (req, res) => {
     let input;
     try { input = parsePersonalExpense(req.body); }
     catch (error) { return res.status(400).json({ error: error.message }); }
-    const expense = await PersonalExpense.findOneAndUpdate(
-      { _id: req.params.expenseId, owner: req.user.userId },
-      input,
-      { new: true, runValidators: true }
-    );
+    const expense = await PersonalExpense.findOne({ _id: req.params.expenseId, owner: req.user.userId });
     if (!expense) return res.status(404).json({ error: "Personal expense not found" });
-    return res.json({ message: "Personal expense updated", expense });
+    const accountId = req.body.accountId;
+    if (!mongoose.isValidObjectId(accountId)) return res.status(400).json({ error: "Choose an account for this expense" });
+    const account = await FinancialAccount.findOne({ _id: accountId, owner: req.user.userId });
+    if (!account) return res.status(404).json({ error: "Account not found" });
+    if (input.currency !== account.currency) return res.status(400).json({ error: "Expense currency must match the selected account" });
+    const previousAccountId = expense.account;
+    Object.assign(expense, input, { account: account._id, currency: account.currency });
+    await expense.save();
+    if (previousAccountId && String(previousAccountId) !== String(account._id)) {
+      await rebuildAccountLedger(previousAccountId, req.user.userId);
+    }
+    await rebuildAccountLedger(account._id, req.user.userId);
+    const savedExpense = await PersonalExpense.findById(expense._id).populate("account", "name type currency");
+    return res.json({ message: "Personal expense updated", expense: savedExpense });
   } catch (error) {
     console.error("Error updating personal expense:", error);
     return res.status(500).json({ error: "Could not update personal expense" });
@@ -515,8 +533,11 @@ export const updatePersonalExpense = async (req, res) => {
 export const deletePersonalExpense = async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.expenseId)) return res.status(400).json({ error: "Invalid expense ID" });
-    const expense = await PersonalExpense.findOneAndDelete({ _id: req.params.expenseId, owner: req.user.userId });
+    const expense = await PersonalExpense.findOne({ _id: req.params.expenseId, owner: req.user.userId });
     if (!expense) return res.status(404).json({ error: "Personal expense not found" });
+    const accountId = expense.account;
+    await expense.deleteOne();
+    if (accountId) await rebuildAccountLedger(accountId, req.user.userId);
     return res.json({ message: "Personal expense deleted" });
   } catch (error) {
     console.error("Error deleting personal expense:", error);
