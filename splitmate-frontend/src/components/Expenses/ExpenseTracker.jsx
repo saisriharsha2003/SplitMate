@@ -18,16 +18,27 @@ const getToday = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
+const getCurrentTime = () => {
+  const date = new Date();
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+};
 const getCurrentMonth = () => getToday().slice(0, 7);
 const CATEGORIES = [
   "Online Order", "Rapido", "Swiggy", "Zomato", "Groceries", "Food & Dining",
-  "Transport", "Auto / Taxi", "Fuel", "Shopping", "Cashback", "Bills & Utilities", "Rent",
+  "Transport", "Auto / Taxi", "Fuel", "Shopping", "Cashback", "Salary", "Bills & Utilities", "Rent",
   "Health & Medical", "EMI", "Entertainment", "Travel", "Education", "Personal Care",
   "Subscriptions", "Gifts", "Home", "Other",
 ];
 const blankForm = (currency) => ({
-  description: "", amount: "", date: getToday(), category: "Other", customCategory: "", notes: "", currency, accountId: "",
+  description: "", direction: "debit", amount: "", date: getToday(), time: getCurrentTime(), category: "Other", customCategory: "", notes: "", currency, accountId: "", transferAccountId: "",
 });
+const TRANSACTION_DIRECTIONS = [
+  { value: "debit", label: "Debit · expense" },
+  { value: "credit", label: "Credit · income or refund" },
+  { value: "transfer", label: "Transfer · between accounts" },
+];
+const getDirection = (transaction) => transaction.direction
+  || (["cashback", "salary"].includes(transaction.category?.trim().toLowerCase()) ? "credit" : "debit");
 
 const ExpenseTracker = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -66,7 +77,7 @@ const ExpenseTracker = () => {
       setExpenseTotal(response.data.total || 0);
       setExpensePageCount(response.data.pages || 0);
     } catch (requestError) {
-      setError(requestError.response?.data?.error || "Could not load your personal expenses.");
+      setError(requestError.response?.data?.error || "Could not load your personal transactions.");
     } finally {
       setLoading(false);
     }
@@ -132,10 +143,12 @@ const ExpenseTracker = () => {
   }, [availableMonths, selectedMonth]);
 
   const monthExpenses = expenses;
-  const getNetAmount = (expense) =>
-    expense.category?.trim().toLowerCase() === "cashback"
-      ? -Number(expense.amount || 0)
-      : Number(expense.amount || 0);
+  const getNetAmount = (transaction) => {
+    const direction = getDirection(transaction);
+    if (direction === "transfer") return 0;
+    if (direction === "debit") return Number(transaction.amount || 0);
+    return transaction.category?.trim().toLowerCase() === "salary" ? 0 : -Number(transaction.amount || 0);
+  };
   const monthTotal = monthTotals.length === 1
     ? formatMoney(monthTotals[0].amount, monthTotals[0].currency)
     : monthTotals.map((item) => formatMoney(item.amount, item.currency)).join(" · ") || formatMoney(0);
@@ -164,11 +177,11 @@ const ExpenseTracker = () => {
   const openAddForm = (event) => {
     if (accountsLoading) return;
     if (accountsError) {
-      toast.error("Your accounts could not be loaded. Please try again before adding an expense.");
+      toast.error("Your accounts could not be loaded. Please try again before adding a transaction.");
       return;
     }
     if (!accounts.length) {
-      toast.info("Add an account before recording an expense. You can open Accounts from the sidebar.");
+      toast.info("Add an account before recording a transaction. You can open Accounts from the sidebar.");
       return;
     }
     expenseModalTriggerRef.current = event.currentTarget;
@@ -182,13 +195,16 @@ const ExpenseTracker = () => {
     setEditingExpense(expense);
     setForm({
       description: expense.description || "",
+      direction: getDirection(expense),
       amount: String(expense.amount ?? ""),
       date: new Date(expense.date).toISOString().slice(0, 10),
-      category: CATEGORIES.includes(expense.category) ? expense.category : "Other",
-      customCategory: CATEGORIES.includes(expense.category) ? "" : expense.category || "",
+      time: expense.time || "00:00",
+      category: expense.direction === "transfer" ? "Transfer" : CATEGORIES.includes(expense.category) ? expense.category : "Other",
+      customCategory: expense.direction === "transfer" || CATEGORIES.includes(expense.category) ? "" : expense.category || "",
       notes: expense.notes || "",
       currency: expense.account?.currency || expense.currency || currency,
       accountId: expense.account?._id || expense.account || "",
+      transferAccountId: expense.transferAccount?._id || expense.transferAccount || "",
     });
     setFormOpen(true);
   };
@@ -197,11 +213,15 @@ const ExpenseTracker = () => {
     event.preventDefault();
     const amount = Number(form.amount);
     if (!form.description.trim() || !Number.isFinite(amount) || amount <= 0 || !form.date) {
-      toast.error("Enter an expense name, a valid amount, and a date");
+      toast.error("Enter a transaction description, a valid amount, and a date");
       return;
     }
     if (!form.accountId) {
-      toast.error("Choose an account for this expense");
+      toast.error("Choose an account for this transaction");
+      return;
+    }
+    if (form.direction === "transfer" && (!form.transferAccountId || form.transferAccountId === form.accountId)) {
+      toast.error("Choose a different destination account for this transfer");
       return;
     }
     setSaving(true);
@@ -209,16 +229,16 @@ const ExpenseTracker = () => {
       ...form,
       description: form.description.trim(),
       amount,
-      category: form.category === "Other" && form.customCategory.trim() ? form.customCategory.trim() : form.category,
+      category: form.direction === "transfer" ? "Transfer" : form.category === "Other" && form.customCategory.trim() ? form.customCategory.trim() : form.category,
     };
     try {
       const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
       if (editingExpense) {
         await axios.put(`${BASE_URL}/api/user/personal-expenses/${editingExpense._id}`, payload, { headers });
-        toast.success("Personal expense updated");
+        toast.success("Transaction updated");
       } else {
         await axios.post(`${BASE_URL}/api/user/personal-expenses`, payload, { headers });
-        toast.success("Personal expense added");
+        toast.success("Transaction added");
       }
       setSelectedMonth(form.date.slice(0, 7));
       setExpensePage(1);
@@ -227,14 +247,14 @@ const ExpenseTracker = () => {
       await fetchExpenses(form.date.slice(0, 7), 1);
       await fetchAccounts();
     } catch (requestError) {
-      toast.error(requestError.response?.data?.error || "Could not save this expense");
+      toast.error(requestError.response?.data?.error || "Could not save this transaction");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (expense) => {
-    if (!window.confirm(`Delete “${expense.description}” from your personal tracker?`)) return;
+    if (!window.confirm(`Delete “${expense.description}” from your personal transaction history?`)) return;
     try {
       await axios.delete(`${BASE_URL}/api/user/personal-expenses/${expense._id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -243,9 +263,9 @@ const ExpenseTracker = () => {
       const nextPage = expenses.length === 1 && expensePage > 1 ? expensePage - 1 : expensePage;
       if (nextPage !== expensePage) setExpensePage(nextPage);
       await fetchExpenses(selectedMonth, nextPage);
-      toast.success("Personal expense deleted");
+      toast.success("Transaction deleted");
     } catch (requestError) {
-      toast.error(requestError.response?.data?.error || "Could not delete this expense");
+      toast.error(requestError.response?.data?.error || "Could not delete this transaction");
     }
   };
 
@@ -256,10 +276,10 @@ const ExpenseTracker = () => {
 
   const expenseFormContent = (
     <>
-      <FormTitle id="expense-form-title">{editingExpense ? "Edit personal expense" : `Add expense to ${formatMonth(selectedMonth)}`}</FormTitle>
+      <FormTitle id="expense-form-title">{editingExpense ? "Edit transaction" : `Add transaction to ${formatMonth(selectedMonth)}`}</FormTitle>
       <FormGrid>
         <Field $spanTwo>
-          <Label htmlFor="personal-description">Expense</Label>
+          <Label htmlFor="personal-description">Description</Label>
           <Input id="personal-description" autoFocus maxLength={140} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="e.g. Groceries" required />
         </Field>
         <Field>
@@ -270,23 +290,48 @@ const ExpenseTracker = () => {
           <Label htmlFor="personal-date">Date</Label>
           <Input id="personal-date" type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} required />
         </Field>
+        <Field>
+          <Label htmlFor="personal-time">Time</Label>
+          <Input id="personal-time" type="time" value={form.time} onChange={(event) => setForm({ ...form, time: event.target.value })} required />
+        </Field>
         <Field $spanTwo>
-          <Label>Paid from account</Label>
+          <Label>{form.direction === "transfer" ? "From account" : "Paid from account"}</Label>
           <DropdownFrame>
             <CustomSelect id="personal-account" ariaLabel="Paid from account" placeholder="Select an account" options={accountOptions} value={accountOptions.find((option) => option.value === form.accountId)} onChange={(option) => {
               const account = accounts.find((item) => item._id === option.value);
-              setForm({ ...form, accountId: option.value, currency: account?.currency || form.currency });
+              const nextCurrency = account?.currency || form.currency;
+              const selectedDestination = accounts.find((item) => item._id === form.transferAccountId);
+              setForm({ ...form, accountId: option.value, currency: nextCurrency,
+                transferAccountId: option.value === form.transferAccountId || selectedDestination?.currency !== nextCurrency ? "" : form.transferAccountId });
             }} />
           </DropdownFrame>
         </Field>
-        <Field $spanTwo={form.category !== "Other"}>
+        {form.direction === "transfer" && <Field $spanTwo>
+          <Label>To account</Label>
+          <DropdownFrame>
+            <CustomSelect id="personal-transfer-account" ariaLabel="Destination account" placeholder="Select destination account"
+              options={accountOptions.filter((option) => {
+                const destination = accounts.find((account) => account._id === option.value);
+                return option.value !== form.accountId && destination?.currency === form.currency;
+              })}
+              value={accountOptions.find((option) => option.value === form.transferAccountId)}
+              onChange={(option) => setForm({ ...form, transferAccountId: option.value })} />
+          </DropdownFrame>
+        </Field>}
+        {form.direction !== "transfer" && <Field>
           <Label>Category</Label>
           <DropdownFrame>
-            <CustomSelect id="personal-category" ariaLabel="Category" options={CATEGORIES.map((category) => ({ value: category, label: category }))} value={{ value: form.category, label: form.category }} onChange={(option) => setForm({ ...form, category: option.value })} />
+            <CustomSelect id="personal-category" ariaLabel="Category" options={CATEGORIES.map((category) => ({ value: category, label: category }))} value={{ value: form.category, label: form.category }} onChange={(option) => setForm({ ...form, category: option.value, direction: ["Cashback", "Salary"].includes(option.value) ? "credit" : form.direction })} />
+          </DropdownFrame>
+        </Field>}
+        <Field>
+          <Label>Type</Label>
+          <DropdownFrame>
+            <CustomSelect id="personal-direction" ariaLabel="Transaction type" options={TRANSACTION_DIRECTIONS} value={TRANSACTION_DIRECTIONS.find((direction) => direction.value === form.direction) || TRANSACTION_DIRECTIONS[0]} onChange={(option) => setForm({ ...form, direction: option.value, category: option.value === "transfer" ? "Transfer" : form.category === "Transfer" ? "Other" : form.category, transferAccountId: option.value === "transfer" ? "" : form.transferAccountId })} />
           </DropdownFrame>
         </Field>
-        {form.category === "Other" && (
-          <Field>
+        {form.direction !== "transfer" && form.category === "Other" && (
+          <Field $spanTwo>
             <Label htmlFor="personal-custom-category">Custom category <span>Optional</span></Label>
             <Input id="personal-custom-category" maxLength={40} value={form.customCategory || ""} onChange={(event) => setForm({ ...form, customCategory: event.target.value })} placeholder="Enter a category" />
           </Field>
@@ -312,7 +357,7 @@ const ExpenseTracker = () => {
           <Header>
             <div>
               <Title>Expense Tracker</Title>
-              <HeaderDescription>Your private spending ledger, organized into monthly sheets.</HeaderDescription>
+              <HeaderDescription>Your private transaction ledger, organized into monthly sheets.</HeaderDescription>
             </div>
           </Header>
 
@@ -331,11 +376,11 @@ const ExpenseTracker = () => {
             <SheetHeader>
               <div>
                 <MonthTitle>{formatMonth(selectedMonth)}</MonthTitle>
-                <p>{monthExpenses.length} {monthExpenses.length === 1 ? "entry" : "entries"} on this page</p>
+                <p>{monthExpenses.length} {monthExpenses.length === 1 ? "transaction" : "transactions"} on this page</p>
               </div>
-              <MonthTotal>{monthTotal}<span>NET MONTHLY SPEND · CASHBACK DEDUCTED · {expenseTotal} ENTRIES</span></MonthTotal>
+              <MonthTotal>{monthTotal}<span>NET MONTHLY SPEND · CREDITS OFFSET · SALARY & TRANSFERS EXCLUDED · {expenseTotal} TRANSACTIONS</span></MonthTotal>
               <AddButton type="button" disabled={!formOpen && accountsLoading} onClick={formOpen ? closeExpenseForm : openAddForm}>
-                {formOpen ? <FaTimes /> : <FaPlus />}{formOpen ? "Close" : accountsLoading ? "Loading accounts…" : "Add expense"}
+                {formOpen ? <FaTimes /> : <FaPlus />}{formOpen ? "Close" : accountsLoading ? "Loading accounts…" : "Add transaction"}
               </AddButton>
             </SheetHeader>
 
@@ -349,19 +394,19 @@ const ExpenseTracker = () => {
             )}
 
             {loading ? (
-              <LoadingState>Loading your personal expenses…</LoadingState>
+              <LoadingState>Loading your personal transactions…</LoadingState>
             ) : error ? (
               <EmptyState role="alert">{error}</EmptyState>
             ) : monthExpenses.length === 0 ? (
               <EmptyState>
                 <FaReceipt />
-                <strong>This month is ready for your expenses</strong>
-                <span>Add personal spending here. These entries stay separate from group balances.</span>
+                <strong>This month is ready for your transactions</strong>
+                <span>Add your personal debits and credits here. These transactions stay separate from group balances.</span>
               </EmptyState>
             ) : (
               <SheetTableWrap>
                 <SheetTable>
-                  <thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Notes</th><th>Amount</th><th>Paid from</th><th>Balance after</th><th aria-label="Actions" /></tr></thead>
+                  <thead><tr><th>Date</th><th>Transaction</th><th>Category</th><th>Notes</th><th>Amount</th><th>Paid from</th><th>Balance after</th><th aria-label="Actions" /></tr></thead>
                   <tbody>
                     {Object.entries(expensesByDate).map(([dateKey, dateExpenses]) => (
                       <React.Fragment key={dateKey}>
@@ -373,13 +418,15 @@ const ExpenseTracker = () => {
                         </tr>
                         {dateExpenses.map((expense) => (
                           <tr key={expense._id}>
-                            <td>{new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(expense.date))}</td>
+                            <td>{new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(expense.date))}<small className="transaction-time">{expense.time || "00:00"}</small></td>
                             <td className="description">{expense.description}</td>
-                            <td><CategoryTag>{expense.category || "Other"}</CategoryTag></td>
+                            <td><CategoryTag>{getDirection(expense) === "transfer" ? "Transfer" : expense.category || "Other"}</CategoryTag></td>
                             <td className="notes" title={expense.notes}>{expense.notes || "—"}</td>
-                            <td className="amount">{formatMoney(expense.amount, expense.currency)}</td>
-                            <td>{expense.account?.name || "—"}</td>
-                            <td className="amount">{expense.balanceAfter == null ? "—" : formatMoney(expense.balanceAfter, expense.account?.currency || expense.currency)}</td>
+                            <td className={`amount ${getDirection(expense)}`}>{getDirection(expense) === "transfer" ? "↔ " : getDirection(expense) === "credit" ? "+" : "−"}{formatMoney(expense.amount, expense.currency)}</td>
+                            <td>{getDirection(expense) === "transfer" ? `${expense.account?.name || "Account"} → ${expense.transferAccount?.name || "Account"}` : expense.account?.name || "—"}</td>
+                            <td className="amount">{getDirection(expense) === "transfer"
+                              ? `From ${expense.balanceAfter == null ? "—" : formatMoney(expense.balanceAfter, expense.account?.currency || expense.currency)} · To ${expense.transferBalanceAfter == null ? "—" : formatMoney(expense.transferBalanceAfter, expense.transferAccount?.currency || expense.currency)}`
+                              : expense.balanceAfter == null ? "—" : formatMoney(expense.balanceAfter, expense.account?.currency || expense.currency)}</td>
                             <td className="actions">
                               <ActionGroup>
                                 <RowAction type="button" onClick={(event) => openEditForm(expense, event)} aria-label={`Edit ${expense.description}`} title="Edit"><FaEdit /></RowAction>
@@ -395,9 +442,9 @@ const ExpenseTracker = () => {
               </SheetTableWrap>
             )}
             {!loading && !error && expensePageCount > 1 && (
-              <TablePagination aria-label="Personal expense pages">
+              <TablePagination aria-label="Personal transaction pages">
                 <PageControl type="button" onClick={() => setExpensePage(visibleExpensePage - 1)} disabled={visibleExpensePage === 1}>Previous</PageControl>
-                <PageInfo>Page {visibleExpensePage} of {expensePageCount} · {expenseTotal} expenses</PageInfo>
+                <PageInfo>Page {visibleExpensePage} of {expensePageCount} · {expenseTotal} transactions</PageInfo>
                 <PageControl type="button" onClick={() => setExpensePage(visibleExpensePage + 1)} disabled={visibleExpensePage === expensePageCount}>Next</PageControl>
               </TablePagination>
             )}

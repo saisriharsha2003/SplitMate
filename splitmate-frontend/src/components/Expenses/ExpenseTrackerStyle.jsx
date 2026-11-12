@@ -402,7 +402,11 @@ export const SheetTable = styled.table`
   tbody tr.date-group strong { color: #aeb3b6; font-size: 0.68rem; font-weight: 600; }
   td.description { color: #e8e9e9; font-weight: 600; white-space: normal; }
   td.notes { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
-  td.amount { color: #f3d456; font-weight: 700; font-variant-numeric: tabular-nums; }
+  td .transaction-time { display: block; margin-top: 3px; color: #858d92; font-size: 0.68rem; }
+  td.amount { color: #f3d456; font-weight: 750; font-variant-numeric: tabular-nums; }
+  td.amount.debit { color: #ed9288; }
+  td.amount.credit { color: #79d8aa; }
+  td.amount.transfer { color: #aab3bd; }
   td.actions { width: 88px; text-align: center; }
 `;
 

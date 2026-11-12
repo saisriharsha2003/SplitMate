@@ -9,9 +9,9 @@ import Sidebar from "../Sidebar/Sidebar";
 import CustomSelect from "../Helper/CustomeSelect";
 import { BASE_URL } from "../config";
 import {
-  AccountCard, AccountForm, AccountGrid, AccountName, AccountNameRow, AccountTop, AccountType, AddAccountButton, AccountModalOverlay, AccountModal, ModalHeading, ModalTitle, ModalClose, ModalActions, CancelButton, HeaderActions,
+  AccountCard, AccountGrid, AccountName, AccountNameRow, AccountTop, AccountType, AddAccountButton, AccountModalOverlay, AccountModal, ModalHeading, ModalTitle, ModalClose, ModalActions, CancelButton, HeaderActions,
   Balance, BalanceLabel, Control, Description, EmptyState, Eyebrow, Field, FormGrid, Header,
-  EntryField, EntrySelectFrame, FormLabel, History, HistoryPagination, HistoryPageButton, HistoryPageInfo, HistoryRow, HistoryTitle, LinkButton, Page, PageInner, Panel, PanelTitle, PrimaryButton, SelectFrame, Title,
+  History, HistoryPagination, HistoryPageButton, HistoryPageInfo, HistoryRow, HistoryTitle, LinkButton, Page, PageInner, Panel, PanelTitle, SelectFrame, Title,
 } from "./AccountsStyle";
 
 const ACCOUNT_TYPES = [
@@ -23,11 +23,6 @@ const ACCOUNT_TYPES = [
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"].map((currency) => ({ value: currency, label: currency }));
 const HISTORY_PAGE_SIZE = 4;
 const initialAccountForm = () => ({ name: "", type: "bank", customTypeName: "", currency: "INR", openingBalance: "" });
-const today = () => {
-  const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-};
-
 const Accounts = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
@@ -36,7 +31,6 @@ const Accounts = () => {
   const [error, setError] = useState("");
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [accountForm, setAccountForm] = useState(initialAccountForm);
-  const [entryForms, setEntryForms] = useState({});
   const [historyPages, setHistoryPages] = useState({});
   const accountDialogRef = useRef(null);
   const accountModalTriggerRef = useRef(null);
@@ -135,37 +129,6 @@ const Accounts = () => {
     }
   };
 
-  const updateEntryForm = (accountId, field, value) => {
-    setEntryForms((current) => ({
-      ...current,
-      [accountId]: { direction: "credit", amount: "", description: "", date: today(), ...current[accountId], [field]: value },
-    }));
-  };
-
-  const handleAddEntry = async (event, account) => {
-    event.preventDefault();
-    const form = entryForms[account._id] || { direction: "credit", amount: "", description: "", date: today() };
-    if (!form.amount || Number(form.amount) <= 0) {
-      toast.error("Enter an amount greater than zero");
-      return;
-    }
-    setSaving(true);
-    try {
-      await axios.post(`${BASE_URL}/api/user/accounts/${account._id}/entries`, {
-        ...form,
-        amount: Number(form.amount),
-      }, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
-      updateEntryForm(account._id, "amount", "");
-      updateEntryForm(account._id, "description", "");
-      await fetchAccounts();
-      toast.success("Account balance updated");
-    } catch (requestError) {
-      toast.error(requestError.response?.data?.error || "Could not update this account");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleDelete = async (account) => {
     if (!window.confirm(`Delete ${account.name}? Accounts with transaction history cannot be deleted.`)) return;
     try {
@@ -207,7 +170,6 @@ const Accounts = () => {
                   const accountType = ACCOUNT_TYPES.find((item) => item.value === account.type);
                   const Icon = account.type === "credit_card" ? FaCreditCard : account.type === "upi_lite" ? FaWallet : FaUniversity;
                   const accountTypeLabel = account.type === "other" ? (account.customTypeName || "Other") : (accountType?.label || account.type);
-                  const form = entryForms[account._id] || { direction: "credit", amount: "", description: "", date: today() };
                   const historyPageCount = Math.max(1, Math.ceil(account.history.length / HISTORY_PAGE_SIZE));
                   const historyPage = Math.min(historyPages[account._id] || 1, historyPageCount);
                   const visibleHistory = account.history.slice((historyPage - 1) * HISTORY_PAGE_SIZE, historyPage * HISTORY_PAGE_SIZE);
@@ -221,22 +183,6 @@ const Accounts = () => {
                         <BalanceLabel>{account.type === "credit_card" ? "Amount owed" : "Available balance"}</BalanceLabel>
                         <Balance $negative={Number(account.currentBalance) < 0}>{formatMoney(account.currentBalance, account.currency)}</Balance>
                       </AccountTop>
-                      <AccountForm onSubmit={(event) => handleAddEntry(event, account)}>
-                        <EntryField>
-                          <FormLabel>Transaction type</FormLabel>
-                          <EntrySelectFrame>
-                            <CustomSelect ariaLabel="Entry direction" options={[
-                          { value: "credit", label: account.type === "credit_card" ? "Credit (payment)" : "Credit (deposit)" },
-                          { value: "debit", label: account.type === "credit_card" ? "Debit (charge)" : "Debit (withdrawal)" },
-                            ]} value={{ value: form.direction, label: form.direction === "credit" ? (account.type === "credit_card" ? "Credit (payment)" : "Credit (deposit)") : (account.type === "credit_card" ? "Debit (charge)" : "Debit (withdrawal)") }} onChange={(option) => updateEntryForm(account._id, "direction", option.value)} />
-                          </EntrySelectFrame>
-                        </EntryField>
-                        <EntryField><FormLabel>Amount</FormLabel><Control aria-label="Entry amount" type="number" min="0.01" step="0.01" placeholder="0.00" value={form.amount} onChange={(event) => updateEntryForm(account._id, "amount", event.target.value)} required /></EntryField>
-                        <EntryField><FormLabel>Description</FormLabel><Control aria-label="Entry description" maxLength={140} placeholder={account.type === "credit_card" ? "Payment or charge" : "Deposit or withdrawal"} value={form.description} onChange={(event) => updateEntryForm(account._id, "description", event.target.value)} /></EntryField>
-                        <EntryField><FormLabel>Date</FormLabel><Control aria-label="Entry date" type="date" value={form.date} onChange={(event) => updateEntryForm(account._id, "date", event.target.value)} required /></EntryField>
-                        <small>{account.type === "credit_card" ? "Credit records a payment; debit records a card charge." : "Credit adds funds; debit records a withdrawal."}</small>
-                        <PrimaryButton type="submit" disabled={saving}>{saving ? "Saving…" : "Update balance"}</PrimaryButton>
-                      </AccountForm>
                       <History>
                         <HistoryTitle>Recent activity</HistoryTitle>
                         {account.history.length ? <>
@@ -244,7 +190,7 @@ const Accounts = () => {
                             <HistoryRow key={`${item.kind}-${item._id}`} $credit={item.direction === "credit"}>
                               <strong>{item.description}</strong>
                               <span>{account.type === "credit_card" ? (item.direction === "credit" ? "−" : "+") : (item.direction === "credit" ? "+" : "−")}{formatMoney(item.amount, account.currency)}</span>
-                              <small>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.date))}</small>
+                              <small>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(item.date))} · {item.time || "00:00"}</small>
                               <small>Balance after · {formatMoney(item.balanceAfter, account.currency)}</small>
                             </HistoryRow>
                           ))}

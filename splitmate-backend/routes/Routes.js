@@ -31,7 +31,6 @@ import {
   deleteGroup,
 } from '../controllers/userController.js';
 import {
-  addAccountEntry,
   createAccount,
   deleteAccount,
   getAccounts,
@@ -52,7 +51,6 @@ router.put('/profile/password', verifyJWT, updatePassword);
 router.put('/profile', verifyJWT, updateUserProfile);
 router.route('/accounts').get(verifyJWT, getAccounts).post(verifyJWT, createAccount);
 router.route('/accounts/:accountId').put(verifyJWT, updateAccount).delete(verifyJWT, deleteAccount);
-router.post('/accounts/:accountId/entries', verifyJWT, addAccountEntry);
 router.post('/reset-password', resetPassword);
 router.post('/verify-code', verifyCode);
 router.put('/new-password', newPassword);

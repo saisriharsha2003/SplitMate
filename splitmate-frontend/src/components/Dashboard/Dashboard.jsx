@@ -102,7 +102,7 @@ const Dashboard = () => {
           <div>
             <HeaderEyebrow>YOUR FINANCIAL OVERVIEW</HeaderEyebrow>
             <Title>Dashboard</Title>
-            <HeaderSubtitle>Keep shared group spending and your personal expenses in separate views.</HeaderSubtitle>
+            <HeaderSubtitle>Keep shared group spending and your personal transactions in separate views.</HeaderSubtitle>
           </div>
           <MonthLabel><FaCalendarAlt />{monthTitle}</MonthLabel>
         </Header>
@@ -153,14 +153,14 @@ const Dashboard = () => {
               <PanelHeader>
                 <div>
                   <PanelTitle><FaReceipt />Personal tracker</PanelTitle>
-                  <PanelDescription>Your private monthly ledger. These expenses never affect group balances.</PanelDescription>
+                  <PanelDescription>Your private monthly ledger. These transactions never affect group balances.</PanelDescription>
                 </div>
                 <PanelLink to="/expense-tracker">Open tracker <FaArrowRight /></PanelLink>
               </PanelHeader>
               <MetricGrid>
                 <MetricCard>
                   <MetricIcon $tone="personal"><FaReceipt /></MetricIcon>
-                  <MetricLabel>Personal expenses</MetricLabel>
+                  <MetricLabel>Personal transactions</MetricLabel>
                   <MetricValue>{metrics.personal.expenseCount}</MetricValue>
                   <MetricNote>All time</MetricNote>
                 </MetricCard>
@@ -168,7 +168,7 @@ const Dashboard = () => {
                   <MetricIcon $tone="personal"><FaChartPie /></MetricIcon>
                   <MetricLabel>Personal spend · {monthTitle}</MetricLabel>
                   <MetricValue $compact>{formatCurrencyTotals(metrics.personal.thisMonthByCurrency, metrics.currency)}</MetricValue>
-                  <MetricNote>{sumCounts(metrics.personal.thisMonthByCurrency)} personal entries this month · cashback deducted</MetricNote>
+                  <MetricNote>{sumCounts(metrics.personal.thisMonthByCurrency)} personal transactions this month · credits offset · salary excluded from spend</MetricNote>
                 </MetricCard>
                 <MetricCard>
                   <MetricIcon $tone="personal"><FaChartPie /></MetricIcon>
@@ -180,17 +180,17 @@ const Dashboard = () => {
                   <MetricIcon $tone="personal"><FaReceipt /></MetricIcon>
                   <MetricLabel>Top category · {monthTitle}</MetricLabel>
                   <MetricValue $compact>{categoryBreakdown[0]?.name || "No data yet"}</MetricValue>
-                  <MetricNote>{categoryBreakdown[0] ? `${categoryBreakdown[0].count} entries this month` : "Add a personal expense to get started"}</MetricNote>
+                  <MetricNote>{categoryBreakdown[0] ? `${categoryBreakdown[0].count} transactions this month` : "Add a personal transaction to get started"}</MetricNote>
                 </MetricCard>
               </MetricGrid>
               <ChartsGrid>
                 <ChartPanel>
-                  <ChartHeading>Monthly expense categories</ChartHeading>
-                  <ChartSubtitle>Share of your {monthTitle.toLowerCase()} entries</ChartSubtitle>
+                  <ChartHeading>Monthly transaction categories</ChartHeading>
+                  <ChartSubtitle>Share of your {monthTitle.toLowerCase()} transactions</ChartSubtitle>
                   {categoryTotal ? (
                     <div className="category-chart-layout">
-                      <DonutChart role="img" aria-label={`Expense categories by count: ${categoryBreakdown.map((item) => `${item.name}, ${item.count}`).join("; ")}`} style={{ background: categoryGradient }}>
-                        <span><strong>{categoryTotal}</strong><small>expenses</small></span>
+                      <DonutChart role="img" aria-label={`Transaction categories by count: ${categoryBreakdown.map((item) => `${item.name}, ${item.count}`).join("; ")}`} style={{ background: categoryGradient }}>
+                        <span><strong>{categoryTotal}</strong><small>transactions</small></span>
                       </DonutChart>
                       <ChartLegend>
                         {categoryBreakdown.map((item, index) => (
@@ -202,14 +202,14 @@ const Dashboard = () => {
                         ))}
                       </ChartLegend>
                     </div>
-                  ) : <ChartEmpty>No personal expenses recorded this month.</ChartEmpty>}
+                  ) : <ChartEmpty>No personal transactions recorded this month.</ChartEmpty>}
                 </ChartPanel>
                 <ChartPanel>
-                  <ChartHeading>Expense activity</ChartHeading>
-                  <ChartSubtitle>Number of personal entries over the last six months</ChartSubtitle>
-                  <TrendChart aria-label="Monthly personal expense counts">
+                  <ChartHeading>Transaction activity</ChartHeading>
+                  <ChartSubtitle>Number of personal transactions over the last six months</ChartSubtitle>
+                  <TrendChart aria-label="Monthly personal transaction counts">
                     {monthlyActivity.map((item) => (
-                      <TrendColumn key={item.month} title={`${item.count} ${item.count === 1 ? "expense" : "expenses"}`}>
+                      <TrendColumn key={item.month} title={`${item.count} ${item.count === 1 ? "transaction" : "transactions"}`}>
                         <TrendBar $height={item.count ? Math.max(8, (item.count / maxMonthlyCount) * 100) : 3} $active={item.month === metrics.month} />
                         <strong>{item.count}</strong>
                         <TrendMonth>{new Intl.DateTimeFormat(undefined, { month: "short", timeZone: "UTC" }).format(new Date(`${item.month}-01T00:00:00.000Z`))}</TrendMonth>
