@@ -690,20 +690,6 @@ export const SettlementControl = styled.input`
   &:focus { border-color: rgba(251,204,19,.65); box-shadow: 0 0 0 3px rgba(251,204,19,.1); }
 `;
 
-export const SettlementSelect = styled.select`
-  width: 100%;
-  min-height: 43px;
-  box-sizing: border-box;
-  padding: 0 12px;
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 10px;
-  background: #171819;
-  color: #f1f1ef;
-  color-scheme: dark;
-  outline: none;
-  &:focus { border-color: rgba(251,204,19,.65); box-shadow: 0 0 0 3px rgba(251,204,19,.1); }
-`;
-
 export const SettlementButton = styled.button`
   min-height: 43px;
   padding: 0 18px;

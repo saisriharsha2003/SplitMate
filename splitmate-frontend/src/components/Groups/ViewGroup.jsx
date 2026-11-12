@@ -7,6 +7,7 @@ import { FaArrowRight, FaHandHoldingUsd, FaPlus, FaTrash, FaUserMinus } from "re
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../config";
+import CustomSelect from "../Helper/CustomeSelect";
 import {
   Wrapper,
   Header,
@@ -52,7 +53,6 @@ import {
   SettlementForm,
   SettlementField,
   SettlementControl,
-  SettlementSelect,
   SettlementButton,
   SettlementModes,
   SettlementModeButton,
@@ -298,9 +298,7 @@ const ViewGroup = () => {
               <SettlementForm onSubmit={handleSettlement}>
                 {settlementMode === "individual" ? <>
                   <SettlementField>Paid to
-                    <SettlementSelect value={selectedPayee?.userId || ""} onChange={(event) => { setSettlementPayee(event.target.value); setSettlementAmount(""); }} required>
-                      {paymentOptions.map((balance) => <option key={balance.userId} value={balance.userId}>{balance.name} · up to {formatMoney(balance.amount)}</option>)}
-                    </SettlementSelect>
+                    <CustomSelect ariaLabel="Paid to" options={paymentOptions.map((balance) => ({ value: balance.userId, label: `${balance.name} · up to ${formatMoney(balance.amount)}` }))} value={selectedPayee ? { value: selectedPayee.userId, label: `${selectedPayee.name} · up to ${formatMoney(selectedPayee.amount)}` } : undefined} onChange={(option) => { setSettlementPayee(option.value); setSettlementAmount(""); }} />
                   </SettlementField>
                   <SettlementField>Amount ({group.currency || "INR"})
                     <SettlementControl type="number" min="0.01" max={selectedPayeeMax} step="0.01" value={settlementAmount} onChange={(event) => setSettlementAmount(event.target.value)} placeholder="0.00" required />
