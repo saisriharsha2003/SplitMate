@@ -12,6 +12,7 @@ import ViewGroup from "./components/Groups/ViewGroup";
 import AddExpense from "./components/Expenses/AddExpense";
 import ExpenseDetails from "./components/Expenses/ExpenseDetails";
 import ExpenseTracker from "./components/Expenses/ExpenseTracker";
+import Accounts from "./components/Expenses/Accounts";
 import EditProfile from "./components/Profile/EditProfile";
 import ChangePassword from "./components/Profile/ChangePassword";
 import ProtectedRoute from "./components/Helper/ProtectedRoute";
@@ -36,6 +37,7 @@ const App = () => {
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/expense-tracker" element={<ExpenseTracker />} />
+          <Route path="/expense-tracker/accounts" element={<Accounts />} />
           <Route path="/groups/new" element={<NewGroup />} />
           <Route path="/groups/:id" element={<ViewGroup />} />
           <Route path="/groups/:id/expense/new" element={<AddExpense />} />
