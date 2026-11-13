@@ -1,130 +1,138 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { toast } from "react-toastify";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
-import { FaUsers, FaGlobe } from "react-icons/fa";
-import Nav from "../Nav/Nav";
-import Sidebar from "../Sidebar/Sidebar";
+import { FaGlobe, FaTimes, FaUsers } from "react-icons/fa";
+import { toast } from "react-toastify";
+import CustomSelect from "../Helper/CustomeSelect";
 import { BASE_URL } from "../config";
-import "react-toastify/dist/ReactToastify.css";
-
 import {
-  Wrapper,
-  Content,
-  FormBox,
-  Title,
+  ModalOverlay,
+  ModalCard,
+  ModalHeader,
+  Eyebrow,
+  ModalTitle,
+  ModalDescription,
+  CloseButton,
   Form,
-  Label,
+  Field,
   InputGroup,
   Input,
+  ModalActions,
+  CancelButton,
   SubmitButton,
 } from "./NewGroupStyle";
-import CustomSelect from "../Helper/CustomeSelect";
 
-const NewGroup = () => {
-  const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+const currencyOptions = [
+  { value: "INR", label: "INR (₹)" },
+  { value: "USD", label: "USD ($)" },
+];
+
+const NewGroup = ({ isOpen, onClose, refreshGroups }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    currency: "INR",
-  });
+  const [formData, setFormData] = useState({ name: "", currency: "INR" });
+  const dialogRef = useRef(null);
+  const loadingRef = useRef(loading);
+  const onCloseRef = useRef(onClose);
+  loadingRef.current = loading;
+  onCloseRef.current = onClose;
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement;
+    document.body.style.overflow = "hidden";
+    const handleKeys = (event) => {
+      if (event.key === "Escape" && !loadingRef.current) onCloseRef.current();
+      if (event.key !== "Tab") return;
+      const focusable = [...(dialogRef.current?.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || [])].filter((element) => element.offsetParent !== null);
+      if (!focusable.length) return;
+      if (event.shiftKey && document.activeElement === focusable[0]) {
+        event.preventDefault();
+        focusable.at(-1).focus();
+      } else if (!event.shiftKey && document.activeElement === focusable.at(-1)) {
+        event.preventDefault();
+        focusable[0].focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeys);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeys);
+      if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
+    };
+  }, [isOpen]);
+
+  const handleClose = () => {
+    if (loading) return;
+    setFormData({ name: "", currency: "INR" });
+    onClose();
   };
 
-  const handleSelectChange = (option) => {
-    setFormData((prev) => ({ ...prev, currency: option.value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      toast.error("Group name is required!", { autoClose: 1500 });
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const name = formData.name.trim();
+    if (!name) {
+      toast.error("Group name is required");
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post(`${BASE_URL}/api/user/groups/new`, formData, {
+      await axios.post(`${BASE_URL}/api/user/groups/new`, { ...formData, name }, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      toast.success("Group created successfully!", { autoClose: 1500 });
-      setTimeout(() => navigate("/groups"), 1500);
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Error creating group", {
-        autoClose: 1500,
-      });
+      toast.success("Group created successfully");
+      setFormData({ name: "", currency: "INR" });
+      refreshGroups?.();
+      onClose();
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Could not create group");
     } finally {
       setLoading(false);
     }
   };
 
-  const currencyOptions = [
-    { value: "INR", label: "INR (₹)" },
-    { value: "USD", label: "USD ($)" },
-  ];
+  if (!isOpen) return null;
 
-  const selectedCurrencyOption = currencyOptions.find(
-    (opt) => opt.value === formData.currency
-  );
-
-  return (
-    <div>
-      <Nav toggleSidebar={() => setIsSidebarOpen((p) => !p)} />
-      <Wrapper>
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <Content>
-          <FormBox
-            as={motion.div}
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-          >
-            <Title>Create a New Group</Title>
-            <Form onSubmit={handleSubmit}>
-              <Label>Group Name</Label>
-              <InputGroup>
-                <FaUsers className="icon" />
-                <Input
-                  type="text"
-                  name="name"
-                  placeholder="Enter group name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </InputGroup>
-
-              <Label>Currency</Label>
-              <InputGroup>
-                <FaGlobe className="icon" />
-                <CustomSelect
-                  options={currencyOptions}
-                  value={selectedCurrencyOption}
-                  onChange={handleSelectChange}
-                  placeholder="Select currency"
-                />
-              </InputGroup>
-
-              <SubmitButton
-                type="submit"
-                disabled={loading}
-                as={motion.button}
-                whileHover={{ scale: 1.05 }}
-              >
-                {loading ? "Creating Group..." : "Create Group"}
-              </SubmitButton>
-            </Form>
-          </FormBox>
-        </Content>
-      </Wrapper>
-    </div>
+  return createPortal(
+    <ModalOverlay onMouseDown={(event) => { if (event.target === event.currentTarget) handleClose(); }}>
+      <ModalCard ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="create-group-title" aria-describedby="create-group-description">
+        <ModalHeader>
+          <div>
+            <Eyebrow>Groups</Eyebrow>
+            <ModalTitle id="create-group-title">Create a group</ModalTitle>
+            <ModalDescription id="create-group-description">Set up a shared space for expenses with friends or family.</ModalDescription>
+          </div>
+          <CloseButton type="button" onClick={handleClose} disabled={loading} aria-label="Close create group dialog"><FaTimes /></CloseButton>
+        </ModalHeader>
+        <Form onSubmit={handleSubmit}>
+          <Field>
+            Group name
+            <InputGroup>
+              <FaUsers className="icon" aria-hidden="true" />
+              <Input autoFocus name="name" type="text" maxLength={80} placeholder="e.g. Goa trip" value={formData.name} onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))} required />
+            </InputGroup>
+          </Field>
+          <Field>
+            Group currency
+            <InputGroup>
+              <FaGlobe className="icon" aria-hidden="true" />
+              <CustomSelect ariaLabel="Group currency" options={currencyOptions} value={currencyOptions.find((option) => option.value === formData.currency)} onChange={(option) => setFormData((current) => ({ ...current, currency: option.value }))} placeholder="Select currency" />
+            </InputGroup>
+          </Field>
+          <ModalActions>
+            <CancelButton type="button" onClick={handleClose} disabled={loading}>Cancel</CancelButton>
+            <SubmitButton type="submit" disabled={loading}>{loading ? "Creating group…" : "Create group"}</SubmitButton>
+          </ModalActions>
+        </Form>
+      </ModalCard>
+    </ModalOverlay>,
+    document.body
   );
 };
 

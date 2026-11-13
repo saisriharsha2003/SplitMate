@@ -125,7 +125,7 @@ export const Input = styled.input`
 export const Button = styled.button`
   width: 100%;
   padding: 12px;
-  background: linear-gradient(90deg, #FBCC13, #00b3b3);
+  background: linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%);
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -138,7 +138,7 @@ export const Button = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    background: linear-gradient(90deg, #00b3b3, #FBCC13);
+    background: linear-gradient(110deg, #c99a12 0%, #dfc45c 48%, #f8e9b0 100%);
   }
 `;
 

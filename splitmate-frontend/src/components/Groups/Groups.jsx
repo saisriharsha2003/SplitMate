@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Nav from "../Nav/Nav";
 import Sidebar from "../Sidebar/Sidebar";
 import {
@@ -34,6 +34,7 @@ import { toast } from "react-toastify";
 import { BASE_URL } from "../config";
 
 import JoinGroupModal from "./JoinGroupModal";
+import NewGroup from "./NewGroup";
 import ShareInviteModal from "./ShareInviteModal";
 
 const Groups = () => {
@@ -42,12 +43,20 @@ const Groups = () => {
   const [loading, setLoading] = useState(true);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
   const [inviteCodeToShow, setInviteCodeToShow] = useState("");
   const [refreshFlag, setRefreshFlag] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const username = localStorage.getItem("username");
 
   const refreshGroups = () => setRefreshFlag((p) => !p);
+
+  useEffect(() => {
+    if (!location.state?.openCreateGroup) return;
+    setCreateGroupModalOpen(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -115,7 +124,7 @@ const Groups = () => {
               <AddButton onClick={openJoinModal}>
                 <FaUserPlus /> Join Group
               </AddButton>
-              <AddButton $primary onClick={() => navigate("/groups/new")}>
+              <AddButton $primary onClick={() => setCreateGroupModalOpen(true)}>
                 <FaPlus /> Add New Group
               </AddButton>
             </HeaderActions>
@@ -191,6 +200,12 @@ const Groups = () => {
           <JoinGroupModal
             isOpen={joinModalOpen}
             onClose={closeJoinModal}
+            refreshGroups={refreshGroups}
+          />
+
+          <NewGroup
+            isOpen={createGroupModalOpen}
+            onClose={() => setCreateGroupModalOpen(false)}
             refreshGroups={refreshGroups}
           />
 

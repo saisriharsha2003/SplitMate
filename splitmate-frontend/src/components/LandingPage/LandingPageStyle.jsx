@@ -106,7 +106,7 @@ export const Subtitle = styled.p`
 `;
 
 export const CTAButton = styled.a`
-  background-color: #FBCC13;
+  background: linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%);
   color: #000;
   font-weight: bold;
   padding: 14px 36px;

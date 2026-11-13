@@ -9,7 +9,7 @@ import CustomSelect from "../Helper/CustomeSelect";
 import { BASE_URL } from "../config";
 import {
   Wrapper, Header, Title, HeaderDescription, SheetToolbar, MonthTabs, MonthTab, MonthPicker,
-  MonthSheet, SheetHeader, MonthTitle, MonthTotal, AddButton, ExpenseForm, ExpenseModalOverlay, FormTitle, FormGrid,
+  MonthSheet, SheetHeader, MonthTitle, MonthTotal, AddButton, ExpenseForm, ExpenseModalOverlay, FormTitle, FormEyebrow, FormDescription, FormHeading, FormCloseButton, FormGrid,
   Field, Label, Input, DropdownFrame, FormActions, SecondaryButton, PrimaryButton, SheetTableWrap, SheetTable,
   CategoryTag, EmptyState, LoadingState, RowAction, TablePagination, PageControl, PageInfo, ActionGroup,
 } from "./ExpenseTrackerStyle";
@@ -276,7 +276,14 @@ const ExpenseTracker = () => {
 
   const expenseFormContent = (
     <>
-      <FormTitle id="expense-form-title">{editingExpense ? "Edit transaction" : `Add transaction to ${formatMonth(selectedMonth)}`}</FormTitle>
+      <FormHeading>
+        <div>
+          <FormEyebrow>Expense tracker</FormEyebrow>
+          <FormTitle id="expense-form-title">{editingExpense ? "Edit transaction" : `Add transaction to ${formatMonth(selectedMonth)}`}</FormTitle>
+          <FormDescription>{editingExpense ? "Update the transaction details and account activity." : "Record an expense, income, or transfer in your personal ledger."}</FormDescription>
+        </div>
+        <FormCloseButton type="button" onClick={closeExpenseForm} aria-label="Close transaction dialog"><FaTimes /></FormCloseButton>
+      </FormHeading>
       <FormGrid>
         <Field $spanTwo>
           <Label htmlFor="personal-description">Description</Label>

@@ -122,10 +122,32 @@ export const PanelTitle = styled.h2`
   &::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #fbcc13; box-shadow: 0 0 12px rgba(251,204,19,.45); }
 `;
 
+export const PanelHeading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+  ${PanelTitle} { margin-bottom: 0; }
+  ${Description} { margin-top: 6px; font-size: .76rem; }
+`;
+
+export const AccountCount = styled.span`
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid rgba(251,204,19,.17);
+  border-radius: 999px;
+  background: rgba(251,204,19,.06);
+  color: #e7cf61;
+  font-size: .7rem;
+  font-weight: 700;
+  @media (max-width: 430px) { align-self: flex-start; }
+`;
+
 export const AccountModalOverlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 2400;
   display: flex;
   align-items: safe center;
   justify-content: center;
@@ -140,12 +162,24 @@ export const AccountModalOverlay = styled.div`
 `;
 
 export const AccountModal = styled(Panel)`
+  position: relative;
   width: min(820px, 100%);
   margin: auto;
   padding: clamp(18px, 3vw, 28px);
   border-color: rgba(251,204,19,.2);
-  background: linear-gradient(145deg, #252627, #171819);
+  background: radial-gradient(ellipse at 8% 0%, rgba(251,204,19,.105), transparent 36%), linear-gradient(145deg, #252627, #171819 74%);
   box-shadow: 0 28px 90px rgba(0,0,0,.58), inset 0 1px rgba(255,255,255,.035);
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 8%;
+    left: 8%;
+    height: 2px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(90deg, transparent, #ffe16b 22%, #d3a900 78%, transparent);
+    pointer-events: none;
+  }
 `;
 
 export const ModalHeading = styled.div`
@@ -184,13 +218,15 @@ export const ModalClose = styled.button`
 `;
 
 export const ModalActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  width: 100%;
   margin-top: 24px;
   padding-top: 18px;
   border-top: 1px solid rgba(255,255,255,.075);
-  @media (max-width: 420px) { flex-direction: column-reverse; button { width: 100%; } }
+  button { width: 100%; }
+  @media (max-width: 420px) { grid-template-columns: 1fr; }
 `;
 
 export const CancelButton = styled.button`
@@ -294,9 +330,9 @@ export const PrimaryButton = styled.button`
   justify-content: center;
   min-height: 43px;
   padding: 0 16px;
-  border: 1px solid #e6c11c;
+  border: 1px solid rgba(255,255,255,.16);
   border-radius: 9px;
-  background: #fbcc13;
+  background: linear-gradient(135deg, #008b8b, #ccba78);
   color: #171717;
   font: inherit;
   font-size: .84rem;
@@ -310,7 +346,7 @@ export const AddAccountButton = styled(PrimaryButton)`
   gap: 8px;
   box-shadow: 0 8px 22px rgba(251,204,19,.1);
   transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
-  &:hover:not(:disabled) { transform: translateY(-1px); background: #ffda48; box-shadow: 0 10px 25px rgba(251,204,19,.17); }
+  &:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 10px 25px rgba(0,139,139,.2); }
   &:focus-visible { outline: 2px solid rgba(251,204,19,.6); outline-offset: 3px; }
   @media (max-width: 560px) { width: 100%; }
 `;
@@ -325,6 +361,7 @@ export const AccountGrid = styled.div`
 
 export const AccountCard = styled.article`
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -332,18 +369,31 @@ export const AccountCard = styled.article`
   overflow: hidden;
   border: 1px solid rgba(255,255,255,.085);
   border-radius: 16px;
-  background: linear-gradient(145deg, rgba(35,36,37,.96), rgba(21,22,23,.98));
-  box-shadow: 0 12px 30px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.025);
+  background: linear-gradient(145deg, rgba(37,39,40,.98), rgba(23,24,25,.99) 72%);
+  box-shadow: 0 15px 36px rgba(0,0,0,.23), inset 0 1px rgba(255,255,255,.035);
   animation: ${rise} 380ms ease both;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
-  &:hover { border-color: rgba(251,204,19,.18); box-shadow: 0 18px 38px rgba(0,0,0,.24), inset 0 1px rgba(255,255,255,.035); }
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 210px;
+    height: 210px;
+    top: -125px;
+    right: -85px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(251,204,19,.11), transparent 70%);
+    pointer-events: none;
+  }
+  &:hover { transform: translateY(-3px); border-color: rgba(251,204,19,.26); box-shadow: 0 21px 42px rgba(0,0,0,.3), inset 0 1px rgba(255,255,255,.045); }
+  @media (prefers-reduced-motion: reduce) { transition: none; &:hover { transform: none; } }
 `;
 
 export const AccountTop = styled.div`
   position: relative;
-  padding: 20px 22px 18px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  background: linear-gradient(110deg, rgba(251,204,19,.035), transparent 70%);
+  padding: 20px 22px 17px;
+  border-bottom: 1px solid rgba(255,255,255,.075);
+  background: linear-gradient(115deg, rgba(251,204,19,.045), rgba(255,255,255,.008) 64%, transparent);
 `;
 
 export const AccountNameRow = styled.div`
@@ -356,7 +406,7 @@ export const AccountNameRow = styled.div`
 export const AccountName = styled.h3`
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   min-width: 0;
   overflow-wrap: anywhere;
   margin: 0;
@@ -364,19 +414,61 @@ export const AccountName = styled.h3`
   font-size: 1.08rem;
   font-weight: 720;
   line-height: 1.25;
-  svg { display: block; flex: 0 0 auto; color: #d9b62f; font-size: .92rem; }
+  span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+`;
+
+export const AccountIcon = styled.span`
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(251,204,19,.22);
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(251,204,19,.17), rgba(251,204,19,.055));
+  color: #f3d75b;
+  box-shadow: inset 0 1px rgba(255,255,255,.06), 0 5px 14px rgba(0,0,0,.16);
+  svg { display: block; font-size: .9rem; }
+`;
+
+export const DeleteAccountButton = styled.button`
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(233,138,128,.17);
+  border-radius: 10px;
+  background: rgba(233,138,128,.045);
+  color: #c9857e;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  &:hover { border-color: rgba(233,138,128,.38); background: rgba(233,138,128,.12); color: #f0a198; }
+  &:focus-visible { outline: 2px solid rgba(233,138,128,.52); outline-offset: 2px; }
 `;
 
 export const AccountType = styled.span`
-  display: inline-flex;
-  margin-top: 6px;
-  color: #8f979b;
-  font-size: .72rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 5px 0 0 47px;
+  color: #9aa1a4;
+  font-size: .7rem;
+  i { width: 3px; height: 3px; border-radius: 50%; background: #7c8589; }
+`;
+
+export const BalanceBlock = styled.div`
+  margin-top: 18px;
+  padding: 13px 15px 14px;
+  border: 1px solid ${(props) => props.$negative ? "rgba(233,138,128,.15)" : "rgba(251,204,19,.13)"};
+  border-radius: 12px;
+  background: ${(props) => props.$negative ? "linear-gradient(120deg, rgba(233,138,128,.075), rgba(255,255,255,.012))" : "linear-gradient(120deg, rgba(251,204,19,.075), rgba(255,255,255,.012))"};
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
 `;
 
 export const BalanceLabel = styled.div`
-  margin-top: 20px;
-  color: #90979b;
+  color: #9ba2a5;
   font-size: .7rem;
   font-weight: 650;
   letter-spacing: .07em;
@@ -384,7 +476,7 @@ export const BalanceLabel = styled.div`
 `;
 
 export const Balance = styled.div`
-  margin-top: 4px;
+  margin-top: 5px;
   color: ${(props) => props.$negative ? "#f09c92" : "#f4d75d"};
   font-size: clamp(1.5rem, 4vw, 1.95rem);
   font-weight: 760;
@@ -434,28 +526,51 @@ export const EntrySelectFrame = styled.div`
 
 export const History = styled.div`
   flex: 1 0 auto;
-  padding: 15px 20px 10px;
+  padding: 15px 18px 13px;
+  background: linear-gradient(180deg, rgba(255,255,255,.012), transparent 55%);
+`;
+
+export const HistoryHeading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 2px 8px;
 `;
 
 export const HistoryTitle = styled.h4`
-  margin: 0 0 5px;
-  color: #c4c8ca;
+  margin: 0;
+  color: #d5d8d9;
   font-size: .74rem;
   font-weight: 700;
+`;
+
+export const ActivityCount = styled.span`
+  color: #858e92;
+  font-size: .65rem;
+  font-weight: 600;
 `;
 
 export const HistoryRow = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px 12px;
-  padding: 11px 0;
-  border-bottom: 1px solid rgba(255,255,255,.055);
-  &:last-child { border-bottom: 0; }
-  strong { overflow: hidden; color: #e3e5e5; font-size: .77rem; text-overflow: ellipsis; white-space: nowrap; }
+  margin-top: 7px;
+  padding: 10px 11px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-left: 2px solid ${(props) => props.$credit ? "#67ba92" : "#c77972"};
+  border-radius: 9px;
+  background: rgba(255,255,255,.022);
+  animation: ${rise} 320ms cubic-bezier(.2,.75,.25,1) both;
+  animation-delay: ${(props) => `${Math.min(props.$index || 0, 3) * 45}ms`};
+  transition: transform 150ms ease, background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  &:hover { transform: translateX(2px); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); box-shadow: 0 5px 14px rgba(0,0,0,.12); }
+  strong { overflow: hidden; color: #e9eae9; font-size: .75rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
   span { color: ${(props) => props.$credit ? "#91d5b5" : "#e29b92"}; font-size: .76rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-  small { color: #858d90; font-size: .68rem; }
+  small { color: #969da0; font-size: .66rem; }
   small:last-child { text-align: right; }
   @media (max-width: 360px) { grid-template-columns: minmax(0, 1fr); span, small:last-child { text-align: left; } }
+  @media (prefers-reduced-motion: reduce) { animation: none; transition: none; &:hover { transform: none; } }
 `;
 
 export const HistoryPagination = styled.nav`

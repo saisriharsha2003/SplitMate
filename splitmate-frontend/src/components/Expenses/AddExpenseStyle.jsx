@@ -371,7 +371,7 @@ export const SubmitButton = styled.button`
   gap: 9px;
   border: 0;
   border-radius: 11px;
-  background: linear-gradient(120deg, #f4c414, #ffdc55);
+  background: linear-gradient(135deg, #008b8b, #ccba78);
   color: #181818;
   font: inherit;
   font-size: 0.98rem;
@@ -380,7 +380,7 @@ export const SubmitButton = styled.button`
   box-shadow: 0 8px 22px rgba(251, 204, 19, 0.14);
   transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
 
-  &:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.04); box-shadow: 0 12px 26px rgba(251, 204, 19, 0.2); }
+  &:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 12px 26px rgba(0, 139, 139, 0.22); }
   &:focus-visible { outline: 3px solid rgba(251, 204, 19, 0.4); outline-offset: 3px; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;

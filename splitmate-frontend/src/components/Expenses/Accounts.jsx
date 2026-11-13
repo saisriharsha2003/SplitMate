@@ -9,9 +9,9 @@ import Sidebar from "../Sidebar/Sidebar";
 import CustomSelect from "../Helper/CustomeSelect";
 import { BASE_URL } from "../config";
 import {
-  AccountCard, AccountGrid, AccountName, AccountNameRow, AccountTop, AccountType, AddAccountButton, AccountModalOverlay, AccountModal, ModalHeading, ModalTitle, ModalClose, ModalActions, CancelButton, HeaderActions,
-  Balance, BalanceLabel, Control, Description, EmptyState, Eyebrow, Field, FormGrid, Header,
-  History, HistoryPagination, HistoryPageButton, HistoryPageInfo, HistoryRow, HistoryTitle, LinkButton, Page, PageInner, Panel, PanelTitle, SelectFrame, Title,
+  AccountCard, AccountGrid, AccountName, AccountNameRow, AccountTop, AccountType, AccountIcon, DeleteAccountButton, AddAccountButton, AccountModalOverlay, AccountModal, ModalHeading, ModalTitle, ModalClose, ModalActions, CancelButton, HeaderActions,
+  Balance, BalanceBlock, BalanceLabel, Control, Description, EmptyState, Eyebrow, Field, FormGrid, Header,
+  History, HistoryHeading, ActivityCount, HistoryPagination, HistoryPageButton, HistoryPageInfo, HistoryRow, HistoryTitle, LinkButton, Page, PageInner, Panel, PanelHeading, PanelTitle, AccountCount, PrimaryButton, SelectFrame, Title,
 } from "./AccountsStyle";
 
 const ACCOUNT_TYPES = [
@@ -161,7 +161,13 @@ const Accounts = () => {
           </Header>
 
           <Panel>
-            <PanelTitle>Your accounts</PanelTitle>
+            <PanelHeading>
+              <div>
+                <PanelTitle>Your accounts</PanelTitle>
+                <Description>Balances and recent activity update from your transactions.</Description>
+              </div>
+              <AccountCount>{accounts.length} {accounts.length === 1 ? "account" : "accounts"}</AccountCount>
+            </PanelHeading>
             {loading ? <EmptyState>Loading accounts…</EmptyState> : error ? <EmptyState role="alert">{error} <button type="button" onClick={fetchAccounts}>Try again</button></EmptyState> : accounts.length === 0 ? (
               <EmptyState>Use Add account above to create your first account. You’ll select it when recording a personal expense.</EmptyState>
             ) : (
@@ -177,17 +183,22 @@ const Accounts = () => {
                     <AccountCard key={account._id}>
                       <AccountTop>
                         <AccountNameRow>
-                          <div><AccountName><Icon aria-hidden="true" />{account.name}</AccountName><AccountType>{accountTypeLabel} · {account.currency}</AccountType></div>
-                          <LinkButton type="button" onClick={() => handleDelete(account)} title="Delete account"><FaTrash /></LinkButton>
+                          <div><AccountName><AccountIcon><Icon aria-hidden="true" /></AccountIcon><span>{account.name}</span></AccountName><AccountType>{accountTypeLabel}<i />{account.currency}</AccountType></div>
+                          <DeleteAccountButton type="button" onClick={() => handleDelete(account)} title="Delete account" aria-label={`Delete ${account.name}`}><FaTrash /></DeleteAccountButton>
                         </AccountNameRow>
-                        <BalanceLabel>{account.type === "credit_card" ? "Amount owed" : "Available balance"}</BalanceLabel>
-                        <Balance $negative={Number(account.currentBalance) < 0}>{formatMoney(account.currentBalance, account.currency)}</Balance>
+                        <BalanceBlock $negative={Number(account.currentBalance) < 0}>
+                          <BalanceLabel>{account.type === "credit_card" ? "Amount owed" : "Available balance"}</BalanceLabel>
+                          <Balance $negative={Number(account.currentBalance) < 0}>{formatMoney(account.currentBalance, account.currency)}</Balance>
+                        </BalanceBlock>
                       </AccountTop>
                       <History>
-                        <HistoryTitle>Recent activity</HistoryTitle>
+                        <HistoryHeading>
+                          <HistoryTitle>Recent activity</HistoryTitle>
+                          <ActivityCount>{account.history.length ? `${account.history.length} recent` : "No activity"}</ActivityCount>
+                        </HistoryHeading>
                         {account.history.length ? <>
-                          {visibleHistory.map((item) => (
-                            <HistoryRow key={`${item.kind}-${item._id}`} $credit={item.direction === "credit"}>
+                          {visibleHistory.map((item, index) => (
+                            <HistoryRow key={`${item.kind}-${item._id}`} $credit={item.direction === "credit"} $index={index}>
                               <strong>{item.description}</strong>
                               <span>{account.type === "credit_card" ? (item.direction === "credit" ? "−" : "+") : (item.direction === "credit" ? "+" : "−")}{formatMoney(item.amount, account.currency)}</span>
                               <small>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(item.date))} · {item.time || "00:00"}</small>

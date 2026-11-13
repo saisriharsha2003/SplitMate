@@ -163,9 +163,9 @@ export const BackButton = styled.button`
 export const SaveButton = styled.button`
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid #fbcc13;
+  border: 1px solid rgba(255,255,255,.16);
   border-radius: 9px;
-  background: linear-gradient(135deg, #ffdc4d, #f3c40c);
+  background: linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%);
   color: #171717;
   font: inherit;
   font-size: 0.84rem;

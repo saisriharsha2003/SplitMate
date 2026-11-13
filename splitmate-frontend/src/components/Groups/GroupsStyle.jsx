@@ -68,9 +68,9 @@ export const HeaderActions = styled.div`
 export const AddButton = styled.button`
   min-height: 42px;
   padding: 0 15px;
-  border: 1px solid ${({ $primary }) => ($primary ? "#fbcc13" : "rgba(255,255,255,.15)")};
+  border: 1px solid ${({ $primary }) => ($primary ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.15)")};
   border-radius: 10px;
-  background: ${({ $primary }) => ($primary ? "#fbcc13" : "rgba(255,255,255,.045)")};
+  background: ${({ $primary }) => ($primary ? "linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%)" : "rgba(255,255,255,.045)")};
   color: ${({ $primary }) => ($primary ? "#171717" : "#f2f2f2")};
   cursor: pointer;
   display: inline-flex;
@@ -84,7 +84,7 @@ export const AddButton = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    background: ${({ $primary }) => ($primary ? "#ffda48" : "rgba(255,255,255,.09)")};
+    background: ${({ $primary }) => ($primary ? "linear-gradient(110deg, #c99a12 0%, #dfc45c 48%, #f8e9b0 100%)" : "rgba(255,255,255,.09)")};
   }
 
   &:focus-visible { outline: 2px solid #fbcc13; outline-offset: 3px; }

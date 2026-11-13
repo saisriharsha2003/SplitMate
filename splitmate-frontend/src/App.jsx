@@ -1,13 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./components/LandingPage/LandingPage";
 import Register from "./components/Register/Register";
 import Login from "./components/Login/Login";
 import Home from "./components/Home/Home";
 import Dashboard from "./components/Dashboard/Dashboard";
 import Groups from "./components/Groups/Groups";
-import NewGroup from "./components/Groups/NewGroup";
 import ViewGroup from "./components/Groups/ViewGroup";
 import AddExpense from "./components/Expenses/AddExpense";
 import ExpenseDetails from "./components/Expenses/ExpenseDetails";
@@ -38,7 +37,7 @@ const App = () => {
           <Route path="/groups" element={<Groups />} />
           <Route path="/expense-tracker" element={<ExpenseTracker />} />
           <Route path="/expense-tracker/accounts" element={<Accounts />} />
-          <Route path="/groups/new" element={<NewGroup />} />
+          <Route path="/groups/new" element={<Navigate to="/groups" replace state={{ openCreateGroup: true }} />} />
           <Route path="/groups/:id" element={<ViewGroup />} />
           <Route path="/groups/:id/expense/new" element={<AddExpense />} />
           <Route path="/groups/:id/expenses/:expenseId" element={<ExpenseDetails />} />
@@ -46,7 +45,7 @@ const App = () => {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <ToastContainer />
+      <ToastContainer autoClose={2500} />
     </>
   );
 };

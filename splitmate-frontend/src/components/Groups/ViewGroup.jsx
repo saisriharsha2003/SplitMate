@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Nav from "../Nav/Nav";
 import Sidebar from "../Sidebar/Sidebar";
@@ -38,6 +38,8 @@ import {
   MemberName,
   MemberRole,
   ActivityList,
+  ActivityRegion,
+  ActivityLoading,
   ActivityItem,
   ActivityCopy,
   ActivityMessage,
@@ -77,6 +79,7 @@ const ViewGroup = () => {
   const { id } = useParams();
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [membersPage, setMembersPage] = useState(1);
@@ -88,21 +91,34 @@ const ViewGroup = () => {
   const [settlementAmount, setSettlementAmount] = useState("");
   const [settlementNote, setSettlementNote] = useState("");
   const [settlementSaving, setSettlementSaving] = useState(false);
+  const groupRef = useRef(null);
+  const lastActivityPage = useRef(1);
+  const settleScrollPending = useRef(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchGroup = async () => {
+      const currentGroup = groupRef.current;
+      const initialLoad = !currentGroup || String(currentGroup._id) !== String(id);
+      const isActivityPageChange = !initialLoad && lastActivityPage.current !== activityPage;
+      if (initialLoad) setLoading(true);
+      if (isActivityPageChange) setActivityLoading(true);
+      let succeeded = false;
       try {
-        setLoading(true);
         const res = await axios.get(`${BASE_URL}/api/user/groups/${id}`, {
           params: { page: expensePage, limit: 5, activityPage, activityLimit: 5, debtPage: debtsPage, debtLimit: 5 },
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+        groupRef.current = res.data;
         setGroup(res.data);
+        succeeded = true;
       } catch (err) {
         console.error("Error fetching group:", err.message);
+        if (isActivityPageChange) setActivityPage(lastActivityPage.current);
       } finally {
-        setLoading(false);
+        if (initialLoad) setLoading(false);
+        if (isActivityPageChange) setActivityLoading(false);
+        if (succeeded) lastActivityPage.current = activityPage;
       }
     };
 
@@ -110,12 +126,15 @@ const ViewGroup = () => {
   }, [id, refreshKey, expensePage, activityPage, debtsPage]);
 
   useEffect(() => {
-    if (group && window.location.hash === "#settle-up") {
+    if (group && String(group._id) === String(id) && settleScrollPending.current && window.location.hash === "#settle-up") {
       window.requestAnimationFrame(() => document.getElementById("settle-up")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      settleScrollPending.current = false;
     }
-  }, [group]);
+  }, [group, id]);
 
   useEffect(() => {
+    lastActivityPage.current = 1;
+    settleScrollPending.current = true;
     setSettlementPayee("");
     setSettlementMode("individual");
     setSettlementAmount("");
@@ -196,8 +215,7 @@ const ViewGroup = () => {
     }
   };
 
-  if (loading) return <PageMessage>Loading group details...</PageMessage>;
-  if (!group) return <PageMessage>Group not found.</PageMessage>;
+  if (loading || !group || String(group._id) !== String(id)) return <PageMessage>Loading group details...</PageMessage>;
 
   const sortedExpenses = group.expenses || [];
   const expensePageCount = group.expensePagination?.pages || 0;
@@ -415,39 +433,42 @@ const ViewGroup = () => {
               <EmptyExpenses>Group activity will appear here as people join and expenses change.</EmptyExpenses>
             ) : (
               <>
-                <ActivityList>
-                  {visibleActivity.map((item) => (
-                    <ActivityItem key={item._id}>
-                      <ActivityCopy>
-                        <ActivityMessage><strong>{item.actor?.name || "A former member"}</strong> {item.message}</ActivityMessage>
-                        {!!item.details?.splitBreakdown?.length && (
-                          <SplitBreakdown>
-                            <SplitBreakdownHeading>Split at this update</SplitBreakdownHeading>
-                            <SplitPeople $many={item.details.splitBreakdown.length > 10}>
-                              {item.details.splitBreakdown.map((split, index) => {
-                                const percentage = Number.isFinite(Number(split.percentage))
-                                  ? Number(split.percentage)
-                                  : (Number(item.details.amount) > 0 ? (Number(split.shareAmount) / Number(item.details.amount)) * 100 : 0);
-                                return (
-                                  <SplitPerson key={`${split.name}-${index}`}>
-                                    <SplitPersonName>{split.name || "Unknown member"}</SplitPersonName>
-                                    <SplitPersonShare>{formatMoney(split.shareAmount)} <span>{percentage.toFixed(1)}%</span></SplitPersonShare>
-                                  </SplitPerson>
-                                );
-                              })}
-                            </SplitPeople>
-                          </SplitBreakdown>
-                        )}
-                      </ActivityCopy>
-                      <ActivityTime>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.createdAt))}</ActivityTime>
-                    </ActivityItem>
-                  ))}
-                </ActivityList>
+                <ActivityRegion aria-busy={activityLoading}>
+                  <ActivityList $loading={activityLoading}>
+                    {visibleActivity.map((item) => (
+                      <ActivityItem key={item._id}>
+                        <ActivityCopy>
+                          <ActivityMessage><strong>{item.actor?.name || "A former member"}</strong> {item.message}</ActivityMessage>
+                          {!!item.details?.splitBreakdown?.length && (
+                            <SplitBreakdown>
+                              <SplitBreakdownHeading>Split at this update</SplitBreakdownHeading>
+                              <SplitPeople $many={item.details.splitBreakdown.length > 10}>
+                                {item.details.splitBreakdown.map((split, index) => {
+                                  const percentage = Number.isFinite(Number(split.percentage))
+                                    ? Number(split.percentage)
+                                    : (Number(item.details.amount) > 0 ? (Number(split.shareAmount) / Number(item.details.amount)) * 100 : 0);
+                                  return (
+                                    <SplitPerson key={`${split.name}-${index}`}>
+                                      <SplitPersonName>{split.name || "Unknown member"}</SplitPersonName>
+                                      <SplitPersonShare>{formatMoney(split.shareAmount)} <span>{percentage.toFixed(1)}%</span></SplitPersonShare>
+                                    </SplitPerson>
+                                  );
+                                })}
+                              </SplitPeople>
+                            </SplitBreakdown>
+                          )}
+                        </ActivityCopy>
+                        <ActivityTime>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.createdAt))}</ActivityTime>
+                      </ActivityItem>
+                    ))}
+                  </ActivityList>
+                  {activityLoading && <ActivityLoading role="status">Loading group activity…</ActivityLoading>}
+                </ActivityRegion>
                 {activityPageCount > 1 && (
                   <Pagination aria-label="Group activity pages">
-                    <PageButton type="button" onClick={() => setActivityPage(visibleActivityPage - 1)} disabled={visibleActivityPage === 1}>Previous</PageButton>
-                    <PageStatus>Page {visibleActivityPage} of {activityPageCount} · {group.activityPagination?.total || 0} updates</PageStatus>
-                    <PageButton type="button" onClick={() => setActivityPage(visibleActivityPage + 1)} disabled={visibleActivityPage === activityPageCount}>Next</PageButton>
+                    <PageButton type="button" onClick={() => setActivityPage(visibleActivityPage - 1)} disabled={activityLoading || visibleActivityPage === 1}>Previous</PageButton>
+                    <PageStatus>{activityLoading ? "Loading activity…" : `Page ${visibleActivityPage} of ${activityPageCount} · ${group.activityPagination?.total || 0} updates`}</PageStatus>
+                    <PageButton type="button" onClick={() => setActivityPage(visibleActivityPage + 1)} disabled={activityLoading || visibleActivityPage === activityPageCount}>Next</PageButton>
                   </Pagination>
                 )}
               </>

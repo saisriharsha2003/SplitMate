@@ -1,30 +1,52 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { FaCopy, FaTimes } from "react-icons/fa";
+import { toast } from "react-toastify";
 import {
   ModalOverlay,
-  ModalBox,
+  ModalCard,
+  ModalHeader,
+  Eyebrow,
   ModalTitle,
-  InviteCodeDisplay,
-  ModalButton,
-} from "./ShareInviteModalStyle";
+  ModalDescription,
+  CloseButton,
+  ModalActions,
+  CancelButton,
+  SubmitButton,
+} from "./NewGroupStyle";
+import { InviteCodeDisplay } from "./ShareInviteModalStyle";
 
 const ShareInviteModal = ({ isOpen, onClose, inviteCode }) => {
   if (!isOpen) return null;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(inviteCode);
-    alert("Invite code copied to clipboard!");
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      toast.success("Invite code copied");
+    } catch {
+      toast.error("Could not copy the invite code");
+    }
   };
 
-  return (
-    <ModalOverlay>
-      <ModalBox as={motion.div} initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
-        <ModalTitle>Share Invite Code</ModalTitle>
+  return createPortal(
+    <ModalOverlay onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <ModalCard role="dialog" aria-modal="true" aria-labelledby="share-invite-title" aria-describedby="share-invite-description">
+        <ModalHeader>
+          <div>
+            <Eyebrow>Groups</Eyebrow>
+            <ModalTitle id="share-invite-title">Share invite code</ModalTitle>
+            <ModalDescription id="share-invite-description">Send this code to the people you want to invite.</ModalDescription>
+          </div>
+          <CloseButton type="button" onClick={onClose} aria-label="Close invite dialog"><FaTimes /></CloseButton>
+        </ModalHeader>
         <InviteCodeDisplay>{inviteCode}</InviteCodeDisplay>
-        <ModalButton onClick={handleCopy}>Copy Code</ModalButton>
-        <ModalButton onClick={onClose}>Close</ModalButton>
-      </ModalBox>
-    </ModalOverlay>
+        <ModalActions>
+          <CancelButton type="button" onClick={onClose}>Close</CancelButton>
+          <SubmitButton type="button" onClick={handleCopy}><FaCopy /> Copy code</SubmitButton>
+        </ModalActions>
+      </ModalCard>
+    </ModalOverlay>,
+    document.body
   );
 };
 

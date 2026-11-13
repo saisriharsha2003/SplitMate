@@ -1,46 +1,87 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
+import { FaKey, FaTimes } from "react-icons/fa";
+import { toast } from "react-toastify";
 import { BASE_URL } from "../config";
 import {
   ModalOverlay,
-  ModalBox,
+  ModalCard,
+  ModalHeader,
+  Eyebrow,
   ModalTitle,
-  ModalForm,
-  ModalInputGroup,
-  ModalInput,
+  ModalDescription,
+  CloseButton,
+  Form,
+  Field,
+  InputGroup,
+  Input,
   ModalActions,
-  ModalButton,
-  ModalCancelButton,
-} from "./JoinGroupModalStyle";
-import { toast } from "react-toastify";
+  CancelButton,
+  SubmitButton,
+} from "./NewGroupStyle";
 
 const JoinGroupModal = ({ isOpen, onClose, refreshGroups }) => {
-  const navigate = useNavigate();
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const dialogRef = useRef(null);
+  const loadingRef = useRef(loading);
+  const onCloseRef = useRef(onClose);
+  loadingRef.current = loading;
+  onCloseRef.current = onClose;
 
-  const handleJoin = async (e) => {
-    e.preventDefault();
-    if (!inviteCode.trim()) return toast.error("Enter an invite code");
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement;
+    document.body.style.overflow = "hidden";
+    const handleKeys = (event) => {
+      if (event.key === "Escape" && !loadingRef.current) onCloseRef.current();
+      if (event.key !== "Tab") return;
+      const focusable = [...(dialogRef.current?.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || [])].filter((element) => element.offsetParent !== null);
+      if (!focusable.length) return;
+      if (event.shiftKey && document.activeElement === focusable[0]) {
+        event.preventDefault();
+        focusable.at(-1).focus();
+      } else if (!event.shiftKey && document.activeElement === focusable.at(-1)) {
+        event.preventDefault();
+        focusable[0].focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeys);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeys);
+      if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
+    };
+  }, [isOpen]);
 
+  const handleClose = () => {
+    if (loading) return;
+    setInviteCode("");
+    onClose();
+  };
+
+  const handleJoin = async (event) => {
+    event.preventDefault();
+    const joinCode = inviteCode.trim();
+    if (!joinCode) {
+      toast.error("Enter an invite code");
+      return;
+    }
     setLoading(true);
     try {
-      await axios.post(
-        `${BASE_URL}/api/user/groups/join`,
-        { joinCode: inviteCode },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
-      toast.success("Joined group successfully!", { autoClose: 1500 });
+      await axios.post(`${BASE_URL}/api/user/groups/join`, { joinCode }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      toast.success("Joined group successfully");
       setInviteCode("");
       refreshGroups?.();
       onClose();
-      navigate("/groups");
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Invalid invite code");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Invalid invite code");
     } finally {
       setLoading(false);
     }
@@ -48,31 +89,33 @@ const JoinGroupModal = ({ isOpen, onClose, refreshGroups }) => {
 
   if (!isOpen) return null;
 
-  return (
-    <ModalOverlay>
-      <ModalBox as={motion.div} initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
-        <ModalTitle>Join Group</ModalTitle>
-        <ModalForm onSubmit={handleJoin}>
-          <ModalInputGroup>
-            <ModalInput
-              type="text"
-              placeholder="Enter Invite Code"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value)}
-              required
-            />
-          </ModalInputGroup>
+  return createPortal(
+    <ModalOverlay onMouseDown={(event) => { if (event.target === event.currentTarget) handleClose(); }}>
+      <ModalCard ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="join-group-title" aria-describedby="join-group-description">
+        <ModalHeader>
+          <div>
+            <Eyebrow>Groups</Eyebrow>
+            <ModalTitle id="join-group-title">Join a group</ModalTitle>
+            <ModalDescription id="join-group-description">Enter an invite code shared by a group member.</ModalDescription>
+          </div>
+          <CloseButton type="button" onClick={handleClose} disabled={loading} aria-label="Close join group dialog"><FaTimes /></CloseButton>
+        </ModalHeader>
+        <Form onSubmit={handleJoin}>
+          <Field>
+            Invite code
+            <InputGroup>
+              <FaKey className="icon" aria-hidden="true" />
+              <Input autoFocus type="text" placeholder="Enter invite code" value={inviteCode} onChange={(event) => setInviteCode(event.target.value)} required />
+            </InputGroup>
+          </Field>
           <ModalActions>
-            <ModalButton type="submit" disabled={loading} as={motion.button}>
-              {loading ? "Joining..." : "Join Group"}
-            </ModalButton>
-            <ModalCancelButton type="button" onClick={onClose}>
-              Cancel
-            </ModalCancelButton>
+            <CancelButton type="button" onClick={handleClose} disabled={loading}>Cancel</CancelButton>
+            <SubmitButton type="submit" disabled={loading}>{loading ? "Joining group…" : "Join group"}</SubmitButton>
           </ModalActions>
-        </ModalForm>
-      </ModalBox>
-    </ModalOverlay>
+        </Form>
+      </ModalCard>
+    </ModalOverlay>,
+    document.body
   );
 };
 

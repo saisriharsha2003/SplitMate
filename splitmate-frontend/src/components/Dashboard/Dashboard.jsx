@@ -80,16 +80,25 @@ const Dashboard = () => {
     ? new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${metrics.month}-01T00:00:00.000Z`))
     : "This month";
   const chartColors = ["#80b4ff", "#fbcc13", "#64d6b0", "#ff987e", "#b99aff", "#f27fc4", "#8bd3e6", "#c4d174"];
+  const groupChartColors = ["#fbcc13", "#ff987e", "#80b4ff", "#64d6b0", "#b99aff", "#8bd3e6", "#f27fc4", "#c4d174"];
+  const makeDonutGradient = (items, colors) => {
+    const total = items.reduce((sum, item) => sum + item.count, 0);
+    if (!total) return "conic-gradient(#34383a 0% 100%)";
+    let offset = 0;
+    return `conic-gradient(${items.map((item, index) => {
+      const start = offset;
+      offset += (item.count / total) * 100;
+      return `${colors[index % colors.length]} ${start}% ${offset}%`;
+    }).join(", ")})`;
+  };
+  const groupBreakdown = metrics?.groups?.groupBreakdown || [];
+  const groupExpenseTotal = groupBreakdown.reduce((sum, item) => sum + item.count, 0);
+  const groupGradient = makeDonutGradient(groupBreakdown, groupChartColors);
+  const groupMonthlyActivity = metrics?.groups?.monthlyActivity || [];
+  const maxGroupMonthlyCount = Math.max(1, ...groupMonthlyActivity.map((item) => item.count));
   const categoryBreakdown = metrics?.personal?.categoryBreakdown || [];
   const categoryTotal = categoryBreakdown.reduce((sum, item) => sum + item.count, 0);
-  let categoryOffset = 0;
-  const categoryGradient = categoryBreakdown.length
-    ? `conic-gradient(${categoryBreakdown.map((item, index) => {
-        const start = categoryOffset;
-        categoryOffset += (item.count / categoryTotal) * 100;
-        return `${chartColors[index % chartColors.length]} ${start}% ${categoryOffset}%`;
-      }).join(", ")})`
-    : "conic-gradient(#34383a 0% 100%)";
+  const categoryGradient = makeDonutGradient(categoryBreakdown, chartColors);
   const monthlyActivity = metrics?.personal?.monthlyActivity || [];
   const maxMonthlyCount = Math.max(1, ...monthlyActivity.map((item) => item.count));
 
@@ -116,8 +125,8 @@ const Dashboard = () => {
             <OverviewPanel $tone="group">
               <PanelHeader>
                 <div>
-                  <PanelTitle><FaUsers />Group expenses</PanelTitle>
-                  <PanelDescription>Shared spending across groups you belong to.</PanelDescription>
+                  <PanelTitle><FaUsers />Group splits</PanelTitle>
+                  <PanelDescription>Shared expenses and activity across the groups you belong to.</PanelDescription>
                 </div>
                 <PanelLink to="/groups">Open groups <FaArrowRight /></PanelLink>
               </PanelHeader>
@@ -147,6 +156,41 @@ const Dashboard = () => {
                   <MetricNote>Totals stay separated by currency</MetricNote>
                 </MetricCard>
               </MetricGrid>
+              <ChartsGrid>
+                <ChartPanel>
+                  <ChartHeading>Shared expenses by group</ChartHeading>
+                  <ChartSubtitle>Share of recorded group expenses · all time</ChartSubtitle>
+                  {groupExpenseTotal ? (
+                    <div className="category-chart-layout">
+                      <DonutChart role="img" aria-label={`Shared expenses by group: ${groupBreakdown.map((item) => `${item.name}, ${item.count}`).join("; ")}`} style={{ background: groupGradient }}>
+                        <span><strong>{groupExpenseTotal}</strong><small>expenses</small></span>
+                      </DonutChart>
+                      <ChartLegend>
+                        {groupBreakdown.map((item, index) => (
+                          <LegendRow key={item.id}>
+                            <ColorDot $color={groupChartColors[index % groupChartColors.length]} />
+                            <span>{item.name}</span>
+                            <ChartValue>{item.count} · {Math.round((item.count / groupExpenseTotal) * 100)}%</ChartValue>
+                          </LegendRow>
+                        ))}
+                      </ChartLegend>
+                    </div>
+                  ) : <ChartEmpty>No shared expenses recorded in your groups yet.</ChartEmpty>}
+                </ChartPanel>
+                <ChartPanel>
+                  <ChartHeading>Group activity</ChartHeading>
+                  <ChartSubtitle>Shared expenses added over the last six months</ChartSubtitle>
+                  <TrendChart aria-label="Monthly shared group expense counts">
+                    {groupMonthlyActivity.map((item) => (
+                      <TrendColumn key={item.month} title={`${item.count} ${item.count === 1 ? "shared expense" : "shared expenses"}`}>
+                        <TrendBar $tone="group" $height={item.count ? Math.max(8, (item.count / maxGroupMonthlyCount) * 100) : 3} $active={item.month === metrics.month} />
+                        <strong>{item.count}</strong>
+                        <TrendMonth>{new Intl.DateTimeFormat(undefined, { month: "short", timeZone: "UTC" }).format(new Date(`${item.month}-01T00:00:00.000Z`))}</TrendMonth>
+                      </TrendColumn>
+                    ))}
+                  </TrendChart>
+                </ChartPanel>
+              </ChartsGrid>
             </OverviewPanel>
 
             <OverviewPanel $tone="personal">
@@ -210,7 +254,7 @@ const Dashboard = () => {
                   <TrendChart aria-label="Monthly personal transaction counts">
                     {monthlyActivity.map((item) => (
                       <TrendColumn key={item.month} title={`${item.count} ${item.count === 1 ? "transaction" : "transactions"}`}>
-                        <TrendBar $height={item.count ? Math.max(8, (item.count / maxMonthlyCount) * 100) : 3} $active={item.month === metrics.month} />
+                        <TrendBar $tone="personal" $height={item.count ? Math.max(8, (item.count / maxMonthlyCount) * 100) : 3} $active={item.month === metrics.month} />
                         <strong>{item.count}</strong>
                         <TrendMonth>{new Intl.DateTimeFormat(undefined, { month: "short", timeZone: "UTC" }).format(new Date(`${item.month}-01T00:00:00.000Z`))}</TrendMonth>
                       </TrendColumn>

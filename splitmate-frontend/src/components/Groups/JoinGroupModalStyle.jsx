@@ -7,7 +7,7 @@ export const ModalOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2400;
 `;
 
 export const ModalBox = styled.div`
@@ -38,11 +38,13 @@ export const ModalForm = styled.form`
 
 export const ModalActions = styled.div`
   display: flex;
+  width: 100%;
   gap: 16px;
 
   & > button {
     flex: 1;
     min-width: 0;
+    width: 100%;
   }
 `;
 
@@ -73,13 +75,13 @@ export const ModalButton = styled.button`
   border: none;
   font-size: 16px;
   font-weight: 600;
-  background: linear-gradient(135deg, #008b8b, #FBCC13);
+  background: linear-gradient(135deg, #008b8b, #ccba78);
   color: #fff;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, filter 0.2s;
 
   &:hover {
-    transform: scale(1.05);
+    filter: brightness(1.06);
   }
 
   &:disabled {
@@ -91,6 +93,7 @@ export const ModalButton = styled.button`
 export const ModalCancelButton = styled(ModalButton)`
   background: #555;
   &:hover {
-    transform: scale(1.05);
+    background: #626262;
+    filter: none;
   }
 `;

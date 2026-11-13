@@ -435,7 +435,7 @@ export const getDashboardMetrics = async (req, res) => {
       User.findById(req.user.userId).select("default_currency"),
     ]);
     const groupIds = groups.map((group) => group._id);
-    const [groupAllTime, groupThisMonth, personalAllTime, personalThisMonth, personalCategories, personalMonthlyActivity] = await Promise.all([
+    const [groupAllTime, groupThisMonth, groupByGroup, groupMonthlyActivity, personalAllTime, personalThisMonth, personalCategories, personalMonthlyActivity] = await Promise.all([
       Expense.aggregate([
         { $match: { groupId: { $in: groupIds } } },
         { $group: { _id: "$currency", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
@@ -443,6 +443,16 @@ export const getDashboardMetrics = async (req, res) => {
       Expense.aggregate([
         { $match: { groupId: { $in: groupIds }, date: { $gte: monthStart, $lt: nextMonthStart } } },
         { $group: { _id: "$currency", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+      ]),
+      Expense.aggregate([
+        { $match: { groupId: { $in: groupIds } } },
+        { $group: { _id: "$groupId", count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+      ]),
+      Expense.aggregate([
+        { $match: { groupId: { $in: groupIds }, date: { $gte: sixMonthsAgo, $lt: nextMonthStart } } },
+        { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$date", timezone: "UTC" } }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
       ]),
       PersonalExpense.aggregate([
         { $match: { owner: new mongoose.Types.ObjectId(req.user.userId) } },
@@ -477,6 +487,11 @@ export const getDashboardMetrics = async (req, res) => {
       const month = date.toISOString().slice(0, 7);
       return { month, count: personalMonthlyActivity.find((item) => item._id === month)?.count || 0 };
     });
+    const groupActivity = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5 + index, 1));
+      const month = date.toISOString().slice(0, 7);
+      return { month, count: groupMonthlyActivity.find((item) => item._id === month)?.count || 0 };
+    });
 
     return res.json({
       month: monthStart.toISOString().slice(0, 7),
@@ -487,6 +502,11 @@ export const getDashboardMetrics = async (req, res) => {
         expenseCount: groupAllTime.reduce((total, item) => total + item.count, 0),
         allTimeByCurrency: groupAllTime.map(({ _id, amount, count }) => ({ currency: _id || "INR", amount, count })),
         thisMonthByCurrency: groupThisMonth.map(({ _id, amount, count }) => ({ currency: _id || "INR", amount, count })),
+        groupBreakdown: groupByGroup.map(({ _id, count }) => {
+          const group = groups.find((item) => String(item._id) === String(_id));
+          return { id: String(_id), name: group?.name || "Former group", count };
+        }),
+        monthlyActivity: groupActivity,
       },
       personal: {
         expenseCount: personalAllTime.reduce((total, item) => total + item.count, 0),

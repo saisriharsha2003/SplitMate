@@ -5,6 +5,9 @@ const enter = keyframes`
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 `;
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
 
 export const Wrapper = styled.main`
   flex: 1;
@@ -389,6 +392,41 @@ export const ActivityList = styled.div`
   border-radius: 12px;
   overflow: hidden;
   background: rgba(29, 30, 31, 0.48);
+  opacity: ${(props) => (props.$loading ? 0.48 : 1)};
+  transition: opacity 160ms ease;
+`;
+
+export const ActivityRegion = styled.div`
+  position: relative;
+  min-height: 72px;
+`;
+
+export const ActivityLoading = styled.div`
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid rgba(251, 204, 19, 0.15);
+  border-radius: 12px;
+  background: rgba(16, 17, 18, 0.72);
+  color: #c3c7ca;
+  font-size: 0.86rem;
+  backdrop-filter: blur(2px);
+
+  &::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(251, 204, 19, 0.25);
+    border-top-color: #fbcc13;
+    border-radius: 50%;
+    animation: ${spin} 700ms linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) { &::before { animation: none; } }
 `;
 
 export const ActivityItem = styled.article`
@@ -695,7 +733,7 @@ export const SettlementButton = styled.button`
   padding: 0 18px;
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 10px;
-  background: linear-gradient(120deg, #fbcc13, #eeb900);
+  background: linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%);
   color: #191919;
   font-size: .85rem;
   font-weight: 750;
@@ -735,7 +773,7 @@ export const FloatingButton = styled.button`
   bottom: 30px;
   width: 58px;
   height: 58px;
-  background: #fbcc13;
+  background: linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%);
   color: #181818;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 19px;
@@ -748,7 +786,7 @@ export const FloatingButton = styled.button`
 
   &:hover {
     transform: translateY(-3px);
-    background: #ffda48;
+    background: linear-gradient(110deg, #c99a12 0%, #dfc45c 48%, #f8e9b0 100%);
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.42), 0 0 28px rgba(251, 204, 19, 0.22);
   }
 

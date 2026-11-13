@@ -305,8 +305,10 @@ export const TrendBar = styled.div`
   height: ${(props) => props.$height}%;
   min-height: 4px;
   border-radius: 5px 5px 2px 2px;
-  background: ${(props) => props.$active ? "linear-gradient(180deg, #b3d2ff, #6595d6)" : "linear-gradient(180deg, #6688b3, #40546d)"};
-  opacity: ${(props) => props.$active ? 1 : 0.72};
+  background: ${(props) => props.$tone === "group"
+    ? props.$active ? "linear-gradient(180deg, #ffe77c, #d6ae08)" : "linear-gradient(180deg, #a99238, #695a24)"
+    : props.$active ? "linear-gradient(180deg, #b3d2ff, #6595d6)" : "linear-gradient(180deg, #6688b3, #40546d)"};
+  opacity: ${(props) => props.$active ? 1 : 0.78};
   transition: height 250ms ease;
 `;
 
