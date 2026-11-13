@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { FaArrowRight, FaChartPie, FaPlus, FaReceipt, FaUsers, FaWallet } from "react-icons/fa";
 import Nav from "../Nav/Nav";
 import Sidebar from "../Sidebar/Sidebar";
-import splitExpenseImage from "../../assets/images/split_expense.webp";
 import {
   HomeLayout,
   ContentWrapper,
@@ -17,7 +16,16 @@ import {
   ActionLink,
   HeroCopy,
   HeroVisual,
-  HeroImage,
+  WorkspacePreview,
+  PreviewHeader,
+  PreviewLabel,
+  PreviewDots,
+  PreviewSummary,
+  PreviewTile,
+  PreviewTileIcon,
+  PreviewRows,
+  PreviewRow,
+  PreviewCheck,
   FeatureSection,
   SectionHeading,
   SectionDescription,
@@ -55,7 +63,7 @@ const Home = () => {
                   Welcome back{displayName ? "," : ""}
                   {displayName && <span> {displayName}</span>}
                 </Title>
-                <Homep>Make money with friends easier to manage.</Homep>
+                <Homep>Shared plans and personal finances, in one calm place.</Homep>
                 <Subtitle>
                   Split group costs fairly, keep your own expenses organized, and see where your money goes—all in one place.
                 </Subtitle>
@@ -68,8 +76,18 @@ const Home = () => {
                   </ActionLink>
                 </Actions>
               </HeroCopy>
-              <HeroVisual>
-                <HeroImage src={splitExpenseImage} alt="Friends sharing an expense together" />
+              <HeroVisual aria-label="SplitMate workspace preview">
+                <WorkspacePreview>
+                  <PreviewHeader><div><PreviewLabel>YOUR WORKSPACE</PreviewLabel><strong>Everything in its place</strong></div><PreviewDots aria-hidden="true"><i /><i /><i /></PreviewDots></PreviewHeader>
+                  <PreviewSummary>
+                    <PreviewTile $tone="gold"><PreviewTileIcon $tone="gold"><FaUsers /></PreviewTileIcon><span>GROUP SPLITS</span><strong>Shared fairly</strong><small>Expenses · shares · settlements</small></PreviewTile>
+                    <PreviewTile $tone="blue"><PreviewTileIcon $tone="blue"><FaReceipt /></PreviewTileIcon><span>PERSONAL TRACKER</span><strong>Your own ledger</strong><small>Debits · credits · transfers</small></PreviewTile>
+                  </PreviewSummary>
+                  <PreviewRows>
+                    <PreviewRow><PreviewCheck><FaWallet /></PreviewCheck><div><strong>Accounts stay in sync</strong><small>See each balance after a transaction</small></div><span>ACCOUNTS</span></PreviewRow>
+                    <PreviewRow><PreviewCheck><FaChartPie /></PreviewCheck><div><strong>Patterns are easier to spot</strong><small>Review summaries and category charts</small></div><span>INSIGHTS</span></PreviewRow>
+                  </PreviewRows>
+                </WorkspacePreview>
               </HeroVisual>
             </HeroSection>
 

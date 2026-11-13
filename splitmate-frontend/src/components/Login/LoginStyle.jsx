@@ -1,179 +1,43 @@
 import styled from "styled-components";
-import background from "../../assets/images/background.jpg";
-import { motion } from "framer-motion";
 
-export const AuthWrapper = styled.div`
-  min-height: 100vh;
-  min-height: 100svh;
-  width: 100%;
+export {
+  AuthWrapper,
+  AuthContainer,
+  ImageSection,
+  BrandMark,
+  BrandPitch,
+  BenefitList,
+  Benefit,
+  FormSection,
+  FormEyebrow,
+  Title,
+  FormIntro,
+  InputGroup,
+  Input,
+  Button,
+  SwitchText,
+} from "../Register/RegisterStyle";
+
+export { Button as MotionButton } from "../Register/RegisterStyle";
+
+export const LoginForm = styled.form`
+  display: grid;
+  gap: 12px;
+  margin-top: 23px;
+`;
+
+export const ForgotPasswordRow = styled.div`
   display: flex;
-  padding: 95px 18px 30px;
-  justify-content: center;
-  align-items: center;
-  background: url(${background}) no-repeat center center/cover;
+  justify-content: flex-end;
+  margin: -1px 0 2px;
 `;
 
-export const AuthContainer = styled.div`
-  display: flex;
-  width: min(100%, 900px);
-  min-height: min(550px, calc(100svh - 125px));
-  background: rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(70px);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  @media (max-width: 560px) { border-radius: 14px; }
+export const ForgotPasswordLink = styled.a`
+  color: #ddc65e;
+  font-size: .78rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 140ms ease;
+  &:hover { color: #f2df8c; text-decoration: underline; }
+  &:focus-visible { outline: 2px solid rgba(204,186,120,.55); outline-offset: 3px; border-radius: 2px; }
 `;
-
-export const ImageSection = styled.div`
-  flex: 1;
-  background: #111;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-
-  img {
-    width: 100%;
-    max-width: 400px;
-    border-radius: 12px;
-  }
-  @media (max-width: 768px) { padding: 14px; img { max-height: 220px; object-fit: cover; } }
-  @media (max-width: 560px) { display: none; }
-`;
-
-export const FormSection = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(22px, 5vw, 40px);
-  color: #fff;
-`;
-
-export const Title = styled.h2`
-  font-size: 2rem;
-  margin-bottom: 20px;
-  color: #FBCC13;
-  display: flex;
-  justify-content: center;
-  text-align: center;
-  font-weight: 700;
-
-`;
-
-export const InputGroup = styled.div`
-  display: flex;
-  align-items: center;
-  position: relative;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  margin: 10px 0;
-  padding: 10px 12px;
-
-  .icon {
-    color: #FBCC13;
-    font-size: 1.1rem;
-    margin-right: 10px;
-    flex-shrink: 0;
-  }
-
-  input {
-    flex: 1; 
-    border: none;
-    outline: none;
-    background: transparent;
-    color: white;
-    font-size: 1rem;
-    padding: 8px;
-  }
-
-  .toggle-password {
-    position: absolute;
-    right: 25px;
-    color: #fff;
-    font-size: 1.1rem;
-    cursor: pointer;
-    z-index: 2; 
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: #00ffff;
-    }
-  }
-`;
-
-export const Input = styled.input`
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  outline: none;
-  background: transparent;
-  color: #fff;
-
-  &::placeholder {
-    color: #fff;
-    opacity: 1;
-  }
-
-  &:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0px 1000px inset !important;
-    -webkit-text-fill-color: #fff !important;
-    caret-color: #fff !important;
-    transition: background-color 9999s ease-in-out 0s;
-  }
-
-  &:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
-    -webkit-text-fill-color: #fff !important;
-  }
-
-`;
-
-export const Button = styled.button`
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%);
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  margin-top: 15px;
-  transition: 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    background: linear-gradient(110deg, #c99a12 0%, #dfc45c 48%, #f8e9b0 100%);
-  }
-`;
-
-export const SwitchText = styled.p`
-  margin-top: 20px;
-  font-size: 0.95rem;
-  text-align: center;
-  color: #ddd;
-
-  a {
-    color: #FBCC13;
-    font-weight: bold;
-    text-decoration: none;
-    transition: 0.3s;
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-`;
-
-export const MotionButton = motion.create(Button);

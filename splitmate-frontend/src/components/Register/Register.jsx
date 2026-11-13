@@ -3,8 +3,15 @@ import {
   AuthWrapper,
   AuthContainer,
   ImageSection,
+  BrandMark,
+  BrandPitch,
+  BenefitList,
+  Benefit,
   FormSection,
+  FormEyebrow,
   Title,
+  FormIntro,
+  RegisterForm,
   InputGroup,
   Input,
   Button,
@@ -15,10 +22,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BASE_URL } from "../config";
-import registerImage from "../../assets/images/auth_image.jpg";
 import MainNav from "../MainNav/MainNav";
 import CustomSelect from "../Helper/CustomeSelect";
 import {
+  FaArrowRight,
+  FaCheckCircle,
   FaEnvelope,
   FaLock,
   FaPhone,
@@ -83,17 +91,29 @@ const Register = () => {
       <AuthWrapper>
         <AuthContainer>
           <ImageSection>
-            <img src={registerImage} alt="Register Illustration" />
+            <BrandMark><span>SM</span> SplitMate</BrandMark>
+            <BrandPitch>
+              <h2>Money talk, <span>made easier.</span></h2>
+              <p>Keep shared group costs clear and your personal finances organized in one place.</p>
+            </BrandPitch>
+            <BenefitList>
+              <Benefit><FaCheckCircle /> Fair group splits and clear balances</Benefit>
+              <Benefit><FaCheckCircle /> Personal accounts and transaction history</Benefit>
+              <Benefit><FaCheckCircle /> Monthly views that make sense</Benefit>
+            </BenefitList>
           </ImageSection>
           <FormSection>
-            <Title>Create Account</Title>
-            <form onSubmit={handleSubmit}>
+            <FormEyebrow>Start with SplitMate</FormEyebrow>
+            <Title>Create your account</Title>
+            <FormIntro>Set up your profile and bring your groups and everyday spending together.</FormIntro>
+            <RegisterForm onSubmit={handleSubmit}>
               <InputGroup>
                 <FaUser className="icon" />
                 <Input
                   type="text"
                   name="name"
                   placeholder="Full Name"
+                  autoComplete="name"
                   value={formData.name}
                   onChange={handleChange}
                   required
@@ -106,6 +126,7 @@ const Register = () => {
                   type="email"
                   name="email"
                   placeholder="Email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -118,6 +139,7 @@ const Register = () => {
                   type="tel"
                   name="mobile"
                   placeholder="Mobile Number"
+                  autoComplete="tel"
                   value={formData.mobile}
                   onChange={handleChange}
                   required
@@ -129,6 +151,7 @@ const Register = () => {
                   type="text"
                   name="username"
                   placeholder="Username"
+                  autoComplete="username"
                   value={formData.username}
                   onChange={handleChange}
                   required
@@ -140,16 +163,19 @@ const Register = () => {
                   type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Password"
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
                   required
                 />
-                <span
+                <button
+                  type="button"
                   className="toggle-password"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </span>
+                </button>
               </InputGroup>
               <InputGroup>
                 <FaLock className="icon" />
@@ -162,10 +188,10 @@ const Register = () => {
                 />
               </InputGroup>
 
-              <Button type="submit">Register</Button>
-            </form>
+              <Button type="submit" disabled={loading}>{loading ? "Creating account…" : "Create account"}<FaArrowRight /></Button>
+            </RegisterForm>
             <SwitchText>
-              Already have an account? <Link to="/login">Login</Link>
+              Already have an account? <Link to="/login">Sign in</Link>
             </SwitchText>
           </FormSection>
         </AuthContainer>

@@ -25,7 +25,7 @@ const MainNav = () => {
         <NavItem as={Link} to="/login">
           Login
         </NavItem>
-        <NavItem as={Link} to="/register">
+        <NavItem as={Link} to="/register" className="nav-cta">
           Register
         </NavItem>
       </NavLinks>
