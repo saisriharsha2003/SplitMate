@@ -17,9 +17,9 @@ export const AuthWrapper = styled.main`
 
 export const AuthContainer = styled.div`
   display: grid;
-  grid-template-columns: minmax(250px, .82fr) minmax(390px, 1.18fr);
-  width: min(100%, 1020px);
-  min-height: 610px;
+  grid-template-columns: ${(props) => props.$single ? "minmax(0,1fr)" : "minmax(250px,.82fr) minmax(390px,1.18fr)"};
+  width: ${(props) => props.$single ? "min(100%,560px)" : "min(100%,1020px)"};
+  min-height: ${(props) => props.$single ? "0" : "610px"};
   border: 1px solid rgba(255,255,255,.095);
   border-radius: 22px;
   overflow: hidden;

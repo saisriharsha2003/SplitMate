@@ -1,10 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { FaArrowRight, FaEnvelope, FaKey, FaLock } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-toastify";
 import MainNav from "../MainNav/MainNav";
 import { BASE_URL } from "../config";
-import { AuthWrapper, AuthContainer, FormSection, Title, Input, MotionButton, SwitchText } from "../Login/LoginStyle";
+import {
+  AuthWrapper,
+  AuthContainer,
+  FormSection,
+  FormEyebrow,
+  Title,
+  FormIntro,
+  LoginForm,
+  InputGroup,
+  Input,
+  Button,
+  SwitchText,
+} from "../Login/LoginStyle";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -39,26 +52,81 @@ const ForgotPassword = () => {
     }
   };
 
-  return <>
-    <MainNav />
-    <AuthWrapper>
-      <AuthContainer style={{ width: "min(520px, calc(100% - 32px))", height: "auto", minHeight: 400 }}>
-        <FormSection>
-          <Title>Reset password</Title>
-          <p style={{ textAlign: "center", color: "#c3c5c6" }}>
-            {step === "email" ? "Enter your account email to receive a verification code." : step === "code" ? "Enter the code sent to your email." : "Choose a new password with at least 6 characters."}
-          </p>
-          <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
-            <Input type="email" autoComplete="email" placeholder="Email address" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={step !== "email"} />
-            {step === "code" && <Input inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit verification code" value={code} onChange={(event) => setCode(event.target.value)} required />}
-            {step === "password" && <Input type="password" autoComplete="new-password" minLength={6} placeholder="New password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required />}
-            <MotionButton type="submit" disabled={busy}>{busy ? "Please wait…" : step === "email" ? "Send code" : step === "code" ? "Verify code" : "Update password"}</MotionButton>
-          </form>
-          <SwitchText><Link to="/login">Back to sign in</Link></SwitchText>
-        </FormSection>
-      </AuthContainer>
-    </AuthWrapper>
-  </>;
+  const stepContent = {
+    email: {
+      title: "Reset your password",
+      description: "Enter your account email and we’ll send a verification code if it matches an account.",
+      action: "Send code",
+    },
+    code: {
+      title: "Check your email",
+      description: "Enter the verification code we sent to confirm it’s you.",
+      action: "Verify code",
+    },
+    password: {
+      title: "Choose a new password",
+      description: "Create a password with at least 6 characters.",
+      action: "Update password",
+    },
+  }[step];
+
+  return (
+    <>
+      <MainNav />
+      <AuthWrapper>
+        <AuthContainer $single>
+          <FormSection>
+            <FormEyebrow>Account recovery</FormEyebrow>
+            <Title>{stepContent.title}</Title>
+            <FormIntro>{stepContent.description}</FormIntro>
+            <LoginForm onSubmit={submit}>
+              <InputGroup>
+                <FaEnvelope className="icon" aria-hidden="true" />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                  disabled={step !== "email"}
+                />
+              </InputGroup>
+              {step === "code" && (
+                <InputGroup>
+                  <FaKey className="icon" aria-hidden="true" />
+                  <Input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="6-digit verification code"
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
+                    required
+                  />
+                </InputGroup>
+              )}
+              {step === "password" && (
+                <InputGroup>
+                  <FaLock className="icon" aria-hidden="true" />
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={6}
+                    placeholder="New password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    required
+                  />
+                </InputGroup>
+              )}
+              <Button type="submit" disabled={busy}>{busy ? "Please wait…" : stepContent.action}<FaArrowRight /></Button>
+            </LoginForm>
+            <SwitchText><Link to="/login">Back to sign in</Link></SwitchText>
+          </FormSection>
+        </AuthContainer>
+      </AuthWrapper>
+    </>
+  );
 };
 
 export default ForgotPassword;
