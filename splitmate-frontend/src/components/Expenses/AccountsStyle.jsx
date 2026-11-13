@@ -341,14 +341,31 @@ export const PrimaryButton = styled.button`
   &:disabled { opacity: .55; cursor: wait; }
 `;
 
-export const AddAccountButton = styled(PrimaryButton)`
-  min-width: 145px;
-  gap: 8px;
-  box-shadow: 0 8px 22px rgba(251,204,19,.1);
-  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
-  &:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 10px 25px rgba(0,139,139,.2); }
-  &:focus-visible { outline: 2px solid rgba(251,204,19,.6); outline-offset: 3px; }
-  @media (max-width: 560px) { width: 100%; }
+export const AddAccountButton = styled.button`
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 10px;
+  background: linear-gradient(110deg, #b8860b 0%, #d4b349 48%, #f0df9b 100%);
+  color: #171717;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(110deg, #c99a12 0%, #dfc45c 48%, #f8e9b0 100%);
+  }
+
+  &:focus-visible { outline: 2px solid #fbcc13; outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { transition: none; }
 `;
 
 export const AccountGrid = styled.div`
